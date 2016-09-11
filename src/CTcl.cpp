@@ -24,7 +24,7 @@ class CTclParse : public CStrParse {
   CTclParse(CTcl *tcl, const std::string &filename);
  ~CTclParse();
 
-  bool eof() const;
+  bool eof() const override;
 
  private:
   bool fillBuffer();
@@ -59,7 +59,7 @@ class CTclTimer : public CTimer {
 
   const std::string &getScript() const { return script_; }
 
-  void timeOut() {
+  void timeOut() override {
     triggered_ = true;
   }
 
@@ -72,7 +72,7 @@ class CTclTimer : public CTimer {
   }
 
  private:
-  CTcl         *tcl_ { 0 };
+  CTcl         *tcl_ { nullptr };
   std::string  script_;
   uint         id_ { 0 };
   bool         triggered_ { false };
@@ -82,7 +82,7 @@ class CTclTimer : public CTimer {
 
 CTcl::
 CTcl(int argc, char **argv) :
- parse_(NULL), scope_(NULL), gscope_(NULL), separator_(';'), debug_(false)
+ parse_(nullptr), scope_(nullptr), gscope_(nullptr), separator_(';'), debug_(false)
 {
   gscope_ = new CTclScope(this);
 
@@ -1079,7 +1079,7 @@ CTclCommand *
 CTcl::
 getCommand() const
 {
-  if (cmdStack_.empty()) return NULL;
+  if (cmdStack_.empty()) return nullptr;
 
   return cmdStack_.back();
 }
@@ -1108,7 +1108,7 @@ CTclProc *
 CTcl::
 getProc() const
 {
-  if (procStack_.empty()) return NULL;
+  if (procStack_.empty()) return nullptr;
 
   return procStack_.back();
 }
@@ -1124,10 +1124,10 @@ CTclCommand *
 CTcl::
 getCommand(const std::string &name)
 {
-  CommandList::const_iterator p = cmds_.find(name);
+  auto p = cmds_.find(name);
 
   if (p == cmds_.end())
-    return NULL;
+    return nullptr;
 
   return (*p).second;
 }
@@ -1196,7 +1196,7 @@ getVariable(const std::string &varName)
     for (uint i = 0; i < num_names - 1; ++i) {
       scope = scope->getNamedScope(names[i]);
 
-      if (scope == NULL)
+      if (scope == nullptr)
         return CTclVariableRef();
     }
 
@@ -1225,7 +1225,7 @@ getVariable(const std::string &varName)
 
         CTclScope *parentScope = scope->parentScope();
 
-        if (parentScope == NULL)
+        if (parentScope == nullptr)
           break;
 
         scope = parentScope;
@@ -1264,7 +1264,7 @@ setVariableValue(const std::string &varName, CTclValueRef value)
 
     CTclScope *parentScope = scope->parentScope();
 
-    if (parentScope == NULL)
+    if (parentScope == nullptr)
       break;
 
     scope = parentScope;
@@ -1331,7 +1331,7 @@ getProc(const std::string &name)
     scope = scope->parentScope();
   }
 
-  return NULL;
+  return nullptr;
 }
 
 std::string
@@ -1340,7 +1340,7 @@ openFile(const std::string &fileName, const std::string &mode)
 {
   FILE *fp = fopen(fileName.c_str(), mode.c_str());
 
-  if (fp == NULL) {
+  if (fp == nullptr) {
     if      (errno == ENOENT)
       throwError("File does not exist");
     else if (errno == EACCES)
@@ -1364,7 +1364,7 @@ void
 CTcl::
 closeFile(const std::string &handle)
 {
-  FileMap::iterator p = fileMap_.find(handle);
+  auto p = fileMap_.find(handle);
 
   if (p == fileMap_.end())
     return;
@@ -1378,7 +1378,7 @@ void
 CTcl::
 writeToFile(const std::string &handle, const std::string &str)
 {
-  FileMap::iterator p = fileMap_.find(handle);
+  auto p = fileMap_.find(handle);
 
   if (p == fileMap_.end())
     return;
@@ -1390,10 +1390,10 @@ FILE *
 CTcl::
 getFile(const std::string &handle)
 {
-  FileMap::iterator p = fileMap_.find(handle);
+  auto p = fileMap_.find(handle);
 
   if (p == fileMap_.end())
-    return NULL;
+    return nullptr;
 
   return (*p).second;
 }
@@ -1411,7 +1411,7 @@ bool
 CTcl::
 cancelTimer(const std::string &id)
 {
-  TimerMap::iterator p = timerMap_.find(id);
+  auto p = timerMap_.find(id);
 
   if (p == timerMap_.end())
     return false;
@@ -1436,7 +1436,7 @@ clearTimer(CTclTimer *timer)
 {
   std::string name = timer->getName();
 
-  TimerMap::iterator p = timerMap_.find(name);
+  auto p = timerMap_.find(name);
 
   if (p != timerMap_.end())
     timerMap_.erase(p);
@@ -1456,10 +1456,10 @@ CTclTimer *
 CTcl::
 getTimer(const std::string &id)
 {
-  TimerMap::iterator p = timerMap_.find(id);
+  auto p = timerMap_.find(id);
 
   if (p == timerMap_.end())
-    return NULL;
+    return nullptr;
 
   return (*p).second;
 }
@@ -1702,14 +1702,14 @@ evalArgs(const std::vector<CTclValueRef> &args)
 
         const std::string &fileId = args[i]->toString();
 
-        FILE *fp = NULL;
+        FILE *fp = nullptr;
 
         if (fileId == "stdin")
           fp = stdin;
         else {
           fp = getFile(fileId);
 
-          if (fp == NULL) {
+          if (fp == nullptr) {
             throwError("can not find channel named \"" + fileId + "\"");
             return CTclValueRef();
           }
@@ -1765,7 +1765,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
 
         const std::string &fileId = args[i]->toString();
 
-        FILE *fp = NULL;
+        FILE *fp = nullptr;
 
         if      (fileId == "stdout")
           fp = stdout;
@@ -1774,7 +1774,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
         else {
           fp = getFile(fileId);
 
-          if (fp == NULL) {
+          if (fp == nullptr) {
             throwError("can not find channel named \"" + fileId + "\"");
             return CTclValueRef();
           }
@@ -2041,7 +2041,7 @@ CTclVariableRef
 CTclScope::
 getVariable(const std::string &varName)
 {
-  VariableList::const_iterator p = vars_.find(varName);
+  auto p = vars_.find(varName);
 
   if (p == vars_.end())
     return CTclVariableRef();
@@ -2107,7 +2107,7 @@ void
 CTclScope::
 setVariableValue(const std::string &varName, CTclValueRef value)
 {
-  VariableList::iterator p = vars_.find(varName);
+  auto p = vars_.find(varName);
 
   if (p == vars_.end()) {
     CTclVariable *var = new CTclVariable;
@@ -2124,7 +2124,7 @@ void
 CTclScope::
 removeVariable(const std::string &varName)
 {
-  VariableList::iterator p = vars_.find(varName);
+  auto p = vars_.find(varName);
 
   if (p != vars_.end())
     vars_.erase(p);
@@ -2147,10 +2147,10 @@ CTclProc *
 CTclScope::
 getProc(const std::string &varName)
 {
-  ProcList::const_iterator p = procs_.find(varName);
+  auto p = procs_.find(varName);
 
   if (p == procs_.end())
-    return NULL;
+    return nullptr;
 
   return (*p).second;
 }
@@ -2159,7 +2159,7 @@ void
 CTclScope::
 removeProc(const std::string &name)
 {
-  ProcList::iterator p = procs_.find(name);
+  auto p = procs_.find(name);
 
   if (p != procs_.end()) {
     CTclProc *proc = (*p).second;
@@ -2187,13 +2187,13 @@ CTclScope *
 CTclScope::
 getNamedScope(const std::string &name, bool create_it)
 {
-  ScopeMap::iterator p = scopeMap_.find(name);
+  auto p = scopeMap_.find(name);
 
   if (p != scopeMap_.end())
     return (*p).second;
 
   if (! create_it)
-    return NULL;
+    return nullptr;
 
   CTclScope *scope = new CTclScope(tcl_, this, name);
 
@@ -2991,7 +2991,7 @@ exec(const std::vector<CTclValueRef> &args)
   else if (opt == "scan") {
   }
   else if (opt == "seconds") {
-    time_t t = time(NULL);
+    time_t t = time(nullptr);
 
     return CTclValueRef(tcl_->createValue((int) t));
   }
@@ -3080,14 +3080,14 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &fileId = args[0]->toString();
 
-  FILE *fp = NULL;
+  FILE *fp = nullptr;
 
   if (fileId == "stdin")
     fp = stdin;
   else {
     fp = tcl_->getFile(fileId);
 
-    if (fp == NULL) {
+    if (fp == nullptr) {
       tcl_->throwError("can not find channel named \"" + fileId + "\"");
       return CTclValueRef();
     }
@@ -3591,7 +3591,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  FILE *fp = NULL;
+  FILE *fp = nullptr;
 
   const std::string &fileId = args[0]->toString();
 
@@ -3602,7 +3602,7 @@ exec(const std::vector<CTclValueRef> &args)
   else {
     fp = tcl_->getFile(fileId);
 
-    if (fp == NULL) {
+    if (fp == nullptr) {
       tcl_->throwError("can not find channel named \"" + fileId + "\"");
       return CTclValueRef();
     }
@@ -3723,13 +3723,18 @@ class CTclPrintF : public CPrintF {
 
   CTclValueRef nextArg() const { return args_[argNum_++]; }
 
-  int   getInt     () const { int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
-  long  getLong    () const { int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
-  LLong getLongLong() const { int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+  int   getInt     () const override {
+    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+  long  getLong    () const override {
+    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+  LLong getLongLong() const override {
+    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
 
-  double getDouble() const { double r=0; if (argNum_ < numArgs_) nextArg()->toReal(r); return r; }
+  double getDouble() const override {
+    double r=0; if (argNum_ < numArgs_) nextArg()->toReal(r); return r; }
 
-  std::string getString() const { return (argNum_ < numArgs_ ? nextArg()->toString() : "" ); }
+  std::string getString() const override {
+    return (argNum_ < numArgs_ ? nextArg()->toString() : "" ); }
 
  private:
   std::vector<CTclValueRef> args_;
@@ -3774,14 +3779,14 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &fileId = args[0]->toString();
 
-  FILE *fp = NULL;
+  FILE *fp = nullptr;
 
   if (fileId == "stdin")
     fp = stdin;
   else {
     fp = tcl_->getFile(fileId);
 
-    if (fp == NULL) {
+    if (fp == nullptr) {
       tcl_->throwError("can not find channel named \"" + fileId + "\"");
       return CTclValueRef();
     }
@@ -4961,7 +4966,7 @@ exec(const std::vector<CTclValueRef> &args)
     else {
       fp = tcl_->getFile(fileId);
 
-      if (fp == NULL) {
+      if (fp == nullptr) {
         tcl_->throwError("can not find channel named \"" + fileId + "\"");
         return CTclValueRef();
       }
@@ -5052,14 +5057,14 @@ exec(const std::vector<CTclValueRef> &args)
 
   std::string dirName = COSFile::getCurrentDir();
 
-  FILE *fp = NULL;
+  FILE *fp = nullptr;
 
   if (fileId == "stdin")
     fp = stdin;
   else {
     fp = tcl_->getFile(fileId);
 
-    if (fp == NULL) {
+    if (fp == nullptr) {
       tcl_->throwError("can not find channel named \"" + fileId + "\"");
       return CTclValueRef();
     }
@@ -5127,8 +5132,8 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclScope *scope = tcl_->getScope();
 
-  std::string::size_type pos1 = varName.find ('(');
-  std::string::size_type pos2 = varName.rfind(')');
+  auto pos1 = varName.find ('(');
+  auto pos2 = varName.rfind(')');
 
   if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 == varName.size() - 1) {
     std::string varName1 = varName.substr(0, pos1);
@@ -5270,7 +5275,7 @@ exec(const std::vector<CTclValueRef> &args)
     const std::string &substr = args[1]->toString();
     const std::string &str    = args[2]->toString();
 
-    std::string::size_type pos = str.find(substr);
+    auto pos = str.find(substr);
 
     return CTclValueRef(tcl_->createValue(int(pos)));
   }
@@ -5307,7 +5312,7 @@ exec(const std::vector<CTclValueRef> &args)
     const std::string &substr = args[1]->toString();
     const std::string &str    = args[2]->toString();
 
-    std::string::size_type pos = str.rfind(substr);
+    auto pos = str.rfind(substr);
 
     return CTclValueRef(tcl_->createValue(int(pos)));
   }
@@ -5528,13 +5533,13 @@ exec(const std::vector<CTclValueRef> &args)
       std::string chars = args[2]->toString();
 
       while (l <= r) {
-        if (chars.find(str[l]) == std::string::npos) break;;
+        if (chars.find(str[l]) == std::string::npos) break;
 
         ++l;
       }
 
       while (r >= l) {
-        if (chars.find(str[r]) == std::string::npos) break;;
+        if (chars.find(str[r]) == std::string::npos) break;
 
         --r;
       }
@@ -5568,7 +5573,7 @@ exec(const std::vector<CTclValueRef> &args)
       std::string chars = args[2]->toString();
 
       while (l <= r) {
-        if (chars.find(str[l]) == std::string::npos) break;;
+        if (chars.find(str[l]) == std::string::npos) break;
 
         ++l;
       }
@@ -5602,7 +5607,7 @@ exec(const std::vector<CTclValueRef> &args)
       std::string chars = args[2]->toString();
 
       while (r >= l) {
-        if (chars.find(str[r]) == std::string::npos) break;;
+        if (chars.find(str[r]) == std::string::npos) break;
 
         --r;
       }
