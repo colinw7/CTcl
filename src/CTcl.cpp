@@ -2978,7 +2978,7 @@ exec(const std::vector<CTclValueRef> &args)
   const std::string &opt = args[0]->toString();
 
   if      (opt == "clicks") {
-    int secs, usecs;
+    long secs, usecs;
 
     COSTime::getHRTime(&secs, &usecs);
 
