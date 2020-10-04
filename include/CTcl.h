@@ -17,15 +17,16 @@ class CTclValue;
 class CTclTimer;
 class CHistory;
 
-typedef CRefPtr<CTclValue> CTclValueRef;
+using CTclValueRef = CRefPtr<CTclValue>;
 
 class CTclValue {
  public:
-  enum ValueType {
-    STRING_TYPE,
-    ARRAY_TYPE,
-    LIST_TYPE,
-    VALUE_MAP_TYPE
+  enum class ValueType {
+    NONE,
+    STRING,
+    ARRAY,
+    LIST,
+    VALUE_MAP
   };
 
  public:
@@ -66,7 +67,7 @@ class CTclValue {
 
   virtual void addValue(CTclValueRef) { assert(false); }
 
-  bool checkInt(CTcl *tcl, int &i);
+  bool checkInt (CTcl *tcl, int    &i);
   bool checkReal(CTcl *tcl, double &r);
 
   bool toIndex(CTcl *tcl, int &ind);
@@ -82,15 +83,19 @@ class CTclValue {
   CTclValue &operator=(const CTclValue &value);
 
  protected:
-  ValueType type_;
+  ValueType type_ { ValueType::NONE };
 };
 
+//---
+
 bool operator<(CTclValueRef lhs, CTclValueRef rhs);
+
+//---
 
 class CTclString : public CTclValue {
  public:
   CTclString(const std::string &str="") :
-   CTclValue(STRING_TYPE), str_(str) {
+   CTclValue(ValueType::STRING), str_(str) {
   }
 
  ~CTclString() { }
@@ -126,17 +131,19 @@ class CTclString : public CTclValue {
   std::string str_;
 };
 
+//---
+
 class CTclArray : public CTclValue {
  public:
-  typedef std::map<std::string,CTclValueRef> ValueMap;
+  using ValueMap = std::map<std::string,CTclValueRef>;
 
  public:
   CTclArray() :
-   CTclValue(ARRAY_TYPE) {
+   CTclValue(ValueType::ARRAY) {
   }
 
   CTclArray(const ValueMap &values) :
-   CTclValue(ARRAY_TYPE), values_(values) {
+   CTclValue(ValueType::ARRAY), values_(values) {
   }
 
  ~CTclArray() { }
@@ -146,19 +153,19 @@ class CTclArray : public CTclValue {
   int cmp(CTclValueRef rhs) const {
     CTclArray *array = rhs.cast<CTclArray>();
 
-    uint num_values1 =        values_.size();
-    uint num_values2 = array->values_.size();
+    uint numValues1 =        values_.size();
+    uint numValues2 = array->values_.size();
 
-    if      (num_values1 < num_values2) return -1;
-    else if (num_values1 > num_values2) return  1;
+    if      (numValues1 < numValues2) return -1;
+    else if (numValues1 > numValues2) return  1;
     else                                return  0;
 
     ValueMap::const_iterator p1, p2, pe;
 
     for (p1 = values_.begin(), p2 = array->values_.begin(), pe =values_.end();
           p1 != pe; ++p1, ++p2) {
-       const std::string &key1   = (*p1).first;
-       const std::string &key2   = (*p2).first;
+       const std::string &key1 = (*p1).first;
+       const std::string &key2 = (*p2).first;
 
        if      (key1 < key2) return -1;
        else if (key1 > key2) return  1;
@@ -213,13 +220,15 @@ class CTclArray : public CTclValue {
   ValueMap values_;
 };
 
+//---
+
 class CTclList : public CTclValue {
  public:
-  typedef std::vector<CTclValueRef> ValueList;
+  using ValueList = std::vector<CTclValueRef>;
 
  public:
   CTclList(const ValueList &values=ValueList()) :
-   CTclValue(LIST_TYPE), values_(values) {
+   CTclValue(ValueType::LIST), values_(values) {
   }
 
  ~CTclList() { }
@@ -229,17 +238,17 @@ class CTclList : public CTclValue {
   int cmp(CTclValueRef rhs) const {
     CTclList *list = rhs.cast<CTclList>();
 
-    uint num_values1 =       values_.size();
-    uint num_values2 = list->values_.size();
+    uint numValues1 =       values_.size();
+    uint numValues2 = list->values_.size();
 
-    if      (num_values1 < num_values2) return -1;
-    else if (num_values1 > num_values2) return  1;
-    else                                return  0;
+    if      (numValues1 < numValues2) return -1;
+    else if (numValues1 > numValues2) return  1;
+    else                              return  0;
 
-    for (uint i = 0; i < num_values1; ++i) {
-       int val = values_[i]->cmp(list->values_[i]);
+    for (uint i = 0; i < numValues1; ++i) {
+      int val = values_[i]->cmp(list->values_[i]);
 
-       if (val != 0) return val;
+      if (val != 0) return val;
     }
 
     return 0;
@@ -273,11 +282,13 @@ class CTclList : public CTclValue {
   ValueList values_;
 };
 
+//---
+
 class CTclCommand {
  public:
-  enum CommandType {
-    COMMAND_TYPE_NONE      = 0,
-    COMMAND_TYPE_ITERATION = (1<<0)
+  enum class CommandType {
+    NONE      = 0,
+    ITERATION = (1<<0)
   };
 
  public:
@@ -294,13 +305,15 @@ class CTclCommand {
   virtual CTclValueRef exec(const std::vector<CTclValueRef> &args) = 0;
 
  protected:
-  CTcl        *tcl_;
-  std::string  name_;
+  CTcl*       tcl_ { nullptr };
+  std::string name_;
 };
+
+//---
 
 class CTclProc {
  public:
-  typedef std::vector<std::string> ArgList;
+  using ArgList = std::vector<std::string>;
 
  public:
   CTclProc(CTcl *tcl, const std::string name, const ArgList &args, CTclValueRef body) :
@@ -316,521 +329,413 @@ class CTclProc {
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 
  private:
-  CTcl         *tcl_;
-  std::string   name_;
-  ArgList       args_;
-  CTclValueRef  body_;
+  CTcl*        tcl_ { nullptr };
+  std::string  name_;
+  ArgList      args_;
+  CTclValueRef body_;
 };
+
+//---
 
 class CTclCommentCommand : public CTclCommand {
  public:
-  CTclCommentCommand(CTcl *tcl) :
-   CTclCommand(tcl, "#") {
-  }
+  CTclCommentCommand(CTcl *tcl) : CTclCommand(tcl, "#") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclAfterCommand : public CTclCommand {
  public:
-  CTclAfterCommand(CTcl *tcl) :
-   CTclCommand(tcl, "after") {
-  }
+  CTclAfterCommand(CTcl *tcl) : CTclCommand(tcl, "after") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclAppendCommand : public CTclCommand {
  public:
-  CTclAppendCommand(CTcl *tcl) :
-   CTclCommand(tcl, "append") {
-  }
+  CTclAppendCommand(CTcl *tcl) : CTclCommand(tcl, "append") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclArrayCommand : public CTclCommand {
  public:
-  CTclArrayCommand(CTcl *tcl) :
-   CTclCommand(tcl, "array") {
-  }
+  CTclArrayCommand(CTcl *tcl) : CTclCommand(tcl, "array") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclBreakCommand : public CTclCommand {
  public:
-  CTclBreakCommand(CTcl *tcl) :
-   CTclCommand(tcl, "break") {
-  }
+  CTclBreakCommand(CTcl *tcl) : CTclCommand(tcl, "break") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclCatchCommand : public CTclCommand {
  public:
-  CTclCatchCommand(CTcl *tcl) :
-   CTclCommand(tcl, "catch") {
-  }
+  CTclCatchCommand(CTcl *tcl) : CTclCommand(tcl, "catch") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclCDCommand : public CTclCommand {
  public:
-  CTclCDCommand(CTcl *tcl) :
-   CTclCommand(tcl, "cd") {
-  }
+  CTclCDCommand(CTcl *tcl) : CTclCommand(tcl, "cd") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclClockCommand : public CTclCommand {
  public:
-  CTclClockCommand(CTcl *tcl) :
-   CTclCommand(tcl, "clock") {
-  }
+  CTclClockCommand(CTcl *tcl) : CTclCommand(tcl, "clock") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclCloseCommand : public CTclCommand {
  public:
-  CTclCloseCommand(CTcl *tcl) :
-   CTclCommand(tcl, "close") {
-  }
+  CTclCloseCommand(CTcl *tcl) : CTclCommand(tcl, "close") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclContinueCommand : public CTclCommand {
  public:
-  CTclContinueCommand(CTcl *tcl) :
-   CTclCommand(tcl, "continue") {
-  }
+  CTclContinueCommand(CTcl *tcl) : CTclCommand(tcl, "continue") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclEchoCommand : public CTclCommand {
  public:
-  CTclEchoCommand(CTcl *tcl) :
-   CTclCommand(tcl, "echo") {
-  }
+  CTclEchoCommand(CTcl *tcl) : CTclCommand(tcl, "echo") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclEofCommand : public CTclCommand {
  public:
-  CTclEofCommand(CTcl *tcl) :
-   CTclCommand(tcl, "eof") {
-  }
+  CTclEofCommand(CTcl *tcl) : CTclCommand(tcl, "eof") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclEvalCommand : public CTclCommand {
  public:
-  CTclEvalCommand(CTcl *tcl) :
-   CTclCommand(tcl, "eval") {
-  }
+  CTclEvalCommand(CTcl *tcl) : CTclCommand(tcl, "eval") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclExecCommand : public CTclCommand {
  public:
-  CTclExecCommand(CTcl *tcl) :
-   CTclCommand(tcl, "exec") {
-  }
+  CTclExecCommand(CTcl *tcl) : CTclCommand(tcl, "exec") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclExitCommand : public CTclCommand {
  public:
-  CTclExitCommand(CTcl *tcl) :
-   CTclCommand(tcl, "exit") {
-  }
+  CTclExitCommand(CTcl *tcl) : CTclCommand(tcl, "exit") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclExprCommand : public CTclCommand {
  public:
-  CTclExprCommand(CTcl *tcl) :
-   CTclCommand(tcl, "expr") {
-  }
+  CTclExprCommand(CTcl *tcl) : CTclCommand(tcl, "expr") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclFileCommand : public CTclCommand {
  public:
-  CTclFileCommand(CTcl *tcl) :
-   CTclCommand(tcl, "file") {
-  }
+  CTclFileCommand(CTcl *tcl) : CTclCommand(tcl, "file") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclFlushCommand : public CTclCommand {
  public:
-  CTclFlushCommand(CTcl *tcl) :
-   CTclCommand(tcl, "flush") {
-  }
+  CTclFlushCommand(CTcl *tcl) : CTclCommand(tcl, "flush") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclForCommand : public CTclCommand {
  public:
-  CTclForCommand(CTcl *tcl) :
-   CTclCommand(tcl, "for") {
-  }
+  CTclForCommand(CTcl *tcl) : CTclCommand(tcl, "for") { }
 
-  uint getType() const { return COMMAND_TYPE_ITERATION; }
+  uint getType() const { return uint(CommandType::ITERATION); }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclForeachCommand : public CTclCommand {
  public:
-  CTclForeachCommand(CTcl *tcl) :
-   CTclCommand(tcl, "foreach") {
-  }
+  CTclForeachCommand(CTcl *tcl) : CTclCommand(tcl, "foreach") { }
 
-  uint getType() const { return COMMAND_TYPE_ITERATION; }
+  uint getType() const { return uint(CommandType::ITERATION); }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclFormatCommand : public CTclCommand {
  public:
-  CTclFormatCommand(CTcl *tcl) :
-   CTclCommand(tcl, "format") {
-  }
+  CTclFormatCommand(CTcl *tcl) : CTclCommand(tcl, "format") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclGetsCommand : public CTclCommand {
  public:
-  CTclGetsCommand(CTcl *tcl) :
-   CTclCommand(tcl, "gets") {
-  }
+  CTclGetsCommand(CTcl *tcl) : CTclCommand(tcl, "gets") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclGlobCommand : public CTclCommand {
  public:
-  CTclGlobCommand(CTcl *tcl) :
-   CTclCommand(tcl, "glob") {
-  }
+  CTclGlobCommand(CTcl *tcl) : CTclCommand(tcl, "glob") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclGlobalCommand : public CTclCommand {
  public:
-  CTclGlobalCommand(CTcl *tcl) :
-   CTclCommand(tcl, "global") {
-  }
+  CTclGlobalCommand(CTcl *tcl) : CTclCommand(tcl, "global") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclHistoryCommand : public CTclCommand {
  public:
-  CTclHistoryCommand(CTcl *tcl) :
-   CTclCommand(tcl, "history") {
-  }
+  CTclHistoryCommand(CTcl *tcl) : CTclCommand(tcl, "history") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclIfCommand : public CTclCommand {
  public:
-  CTclIfCommand(CTcl *tcl) :
-   CTclCommand(tcl, "if") {
-  }
+  CTclIfCommand(CTcl *tcl) : CTclCommand(tcl, "if") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclIncrCommand : public CTclCommand {
  public:
-  CTclIncrCommand(CTcl *tcl) :
-   CTclCommand(tcl, "incr") {
-  }
+  CTclIncrCommand(CTcl *tcl) : CTclCommand(tcl, "incr") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclInfoCommand : public CTclCommand {
  public:
-  CTclInfoCommand(CTcl *tcl) :
-   CTclCommand(tcl, "info") {
-  }
+  CTclInfoCommand(CTcl *tcl) : CTclCommand(tcl, "info") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclJoinCommand : public CTclCommand {
  public:
-  CTclJoinCommand(CTcl *tcl) :
-   CTclCommand(tcl, "join") {
-  }
+  CTclJoinCommand(CTcl *tcl) : CTclCommand(tcl, "join") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLAppendCommand : public CTclCommand {
  public:
-  CTclLAppendCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lappend") {
-  }
+  CTclLAppendCommand(CTcl *tcl) : CTclCommand(tcl, "lappend") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclListCommand : public CTclCommand {
  public:
-  CTclListCommand(CTcl *tcl) :
-   CTclCommand(tcl, "list") {
-  }
+  CTclListCommand(CTcl *tcl) : CTclCommand(tcl, "list") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLIndexCommand : public CTclCommand {
  public:
-  CTclLIndexCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lindex") {
-  }
+  CTclLIndexCommand(CTcl *tcl) : CTclCommand(tcl, "lindex") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLInsertCommand : public CTclCommand {
  public:
-  CTclLInsertCommand(CTcl *tcl) :
-   CTclCommand(tcl, "linsert") {
-  }
+  CTclLInsertCommand(CTcl *tcl) : CTclCommand(tcl, "linsert") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLLengthCommand : public CTclCommand {
  public:
-  CTclLLengthCommand(CTcl *tcl) :
-   CTclCommand(tcl, "llength") {
-  }
+  CTclLLengthCommand(CTcl *tcl) : CTclCommand(tcl, "llength") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLRangeCommand : public CTclCommand {
  public:
-  CTclLRangeCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lrange") {
-  }
+  CTclLRangeCommand(CTcl *tcl) : CTclCommand(tcl, "lrange") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLRepeatCommand : public CTclCommand {
  public:
-  CTclLRepeatCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lrepeat") {
-  }
+  CTclLRepeatCommand(CTcl *tcl) : CTclCommand(tcl, "lrepeat") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLReplaceCommand : public CTclCommand {
  public:
-  CTclLReplaceCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lreplace") {
-  }
+  CTclLReplaceCommand(CTcl *tcl) : CTclCommand(tcl, "lreplace") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLSearchCommand : public CTclCommand {
  public:
-  CTclLSearchCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lsearch") {
-  }
+  CTclLSearchCommand(CTcl *tcl) : CTclCommand(tcl, "lsearch") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLSetCommand : public CTclCommand {
  public:
-  CTclLSetCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lset") {
-  }
+  CTclLSetCommand(CTcl *tcl) : CTclCommand(tcl, "lset") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclLSortCommand : public CTclCommand {
  public:
-  CTclLSortCommand(CTcl *tcl) :
-   CTclCommand(tcl, "lsort") {
-  }
+  CTclLSortCommand(CTcl *tcl) : CTclCommand(tcl, "lsort") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclNamespaceCommand : public CTclCommand {
  public:
-  CTclNamespaceCommand(CTcl *tcl) :
-   CTclCommand(tcl, "namespace") {
-  }
+  CTclNamespaceCommand(CTcl *tcl) : CTclCommand(tcl, "namespace") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclOpenCommand : public CTclCommand {
  public:
-  CTclOpenCommand(CTcl *tcl) :
-   CTclCommand(tcl, "open") {
-  }
+  CTclOpenCommand(CTcl *tcl) : CTclCommand(tcl, "open") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclProcCommand : public CTclCommand {
  public:
-  CTclProcCommand(CTcl *tcl) :
-   CTclCommand(tcl, "proc") {
-  }
+  CTclProcCommand(CTcl *tcl) : CTclCommand(tcl, "proc") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclPutsCommand : public CTclCommand {
  public:
-  CTclPutsCommand(CTcl *tcl) :
-   CTclCommand(tcl, "puts") {
-  }
+  CTclPutsCommand(CTcl *tcl) : CTclCommand(tcl, "puts") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclPidCommand : public CTclCommand {
  public:
-  CTclPidCommand(CTcl *tcl) :
-   CTclCommand(tcl, "pid") {
-  }
+  CTclPidCommand(CTcl *tcl) : CTclCommand(tcl, "pid") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclPwdCommand : public CTclCommand {
  public:
-  CTclPwdCommand(CTcl *tcl) :
-   CTclCommand(tcl, "pwd") {
-  }
+  CTclPwdCommand(CTcl *tcl) : CTclCommand(tcl, "pwd") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclReadCommand : public CTclCommand {
  public:
-  CTclReadCommand(CTcl *tcl) :
-   CTclCommand(tcl, "read") {
-  }
+  CTclReadCommand(CTcl *tcl) : CTclCommand(tcl, "read") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclReturnCommand : public CTclCommand {
  public:
-  CTclReturnCommand(CTcl *tcl) :
-   CTclCommand(tcl, "return") {
-  }
+  CTclReturnCommand(CTcl *tcl) : CTclCommand(tcl, "return") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclSetCommand : public CTclCommand {
  public:
-  CTclSetCommand(CTcl *tcl) :
-   CTclCommand(tcl, "set") {
-  }
+  CTclSetCommand(CTcl *tcl) : CTclCommand(tcl, "set") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclSourceCommand : public CTclCommand {
  public:
-  CTclSourceCommand(CTcl *tcl) :
-   CTclCommand(tcl, "source") {
-  }
+  CTclSourceCommand(CTcl *tcl) : CTclCommand(tcl, "source") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclStringCommand : public CTclCommand {
  public:
-  CTclStringCommand(CTcl *tcl) :
-   CTclCommand(tcl, "string") {
-  }
+  CTclStringCommand(CTcl *tcl) : CTclCommand(tcl, "string") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclSwitchCommand : public CTclCommand {
  public:
-  CTclSwitchCommand(CTcl *tcl) :
-   CTclCommand(tcl, "switch") {
-  }
+  CTclSwitchCommand(CTcl *tcl) : CTclCommand(tcl, "switch") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclUpdateCommand : public CTclCommand {
  public:
-  CTclUpdateCommand(CTcl *tcl) :
-   CTclCommand(tcl, "update") {
-  }
+  CTclUpdateCommand(CTcl *tcl) : CTclCommand(tcl, "update") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclUnsetCommand : public CTclCommand {
  public:
-  CTclUnsetCommand(CTcl *tcl) :
-   CTclCommand(tcl, "unset") {
-  }
+  CTclUnsetCommand(CTcl *tcl) : CTclCommand(tcl, "unset") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclVariableCommand : public CTclCommand {
  public:
-  CTclVariableCommand(CTcl *tcl) :
-   CTclCommand(tcl, "variable") {
-  }
+  CTclVariableCommand(CTcl *tcl) : CTclCommand(tcl, "variable") { }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
 
 class CTclWhileCommand : public CTclCommand {
  public:
-  CTclWhileCommand(CTcl *tcl) :
-   CTclCommand(tcl, "while") {
-  }
+  CTclWhileCommand(CTcl *tcl) : CTclCommand(tcl, "while") { }
 
-  uint getType() const { return COMMAND_TYPE_ITERATION; }
+  uint getType() const { return uint(CommandType::ITERATION); }
 
   CTclValueRef exec(const std::vector<CTclValueRef> &args);
 };
+
+//---
 
 class CTclVariable;
 
@@ -845,8 +750,10 @@ class CTclVariableProc {
   virtual void notify(CTclVariable *var) = 0;
 
  protected:
-  uint id_;
+  uint id_ { 0 };
 };
+
+//---
 
 class CTclVariable {
  public:
@@ -876,7 +783,7 @@ class CTclVariable {
   void callNotifyProcs();
 
  private:
-  typedef std::list<CTclVariableProc *> VariableProcList;
+  using VariableProcList = std::list<CTclVariableProc *>;
 
   static uint notifyProcId_;
 
@@ -884,7 +791,9 @@ class CTclVariable {
   VariableProcList notifyProcs_;
 };
 
-typedef CRefPtr<CTclVariable> CTclVariableRef;
+using CTclVariableRef = CRefPtr<CTclVariable>;
+
+//---
 
 class CTclEnvVariable : public CTclVariable {
  public:
@@ -893,6 +802,8 @@ class CTclEnvVariable : public CTclVariable {
   CTclValueRef getArrayValue(const std::string &indexStr) const;
 
 };
+
+//---
 
 class CTclScope {
  public:
@@ -932,17 +843,19 @@ class CTclScope {
   CTclScope *getNamedScope(const std::string &name, bool create_it=false);
 
  private:
-  typedef std::map<std::string,CTclVariableRef> VariableList;
-  typedef std::map<std::string,CTclProc *>      ProcList;
-  typedef std::map<std::string,CTclScope *>     ScopeMap;
+  using VariableList = std::map<std::string,CTclVariableRef>;
+  using ProcList     = std::map<std::string,CTclProc *>;
+  using ScopeMap     = std::map<std::string,CTclScope *>;
 
-  CTcl         *tcl_;
-  CTclScope    *parent_;
-  std::string   name_;
-  VariableList  vars_;
-  ProcList      procs_;
-  ScopeMap      scopeMap_;
+  CTcl*        tcl_    { nullptr };
+  CTclScope*   parent_ { nullptr };
+  std::string  name_;
+  VariableList vars_;
+  ProcList     procs_;
+  ScopeMap     scopeMap_;
 };
+
+//---
 
 class CTclError {
  public:
@@ -953,6 +866,8 @@ class CTclError {
  private:
   std::string msg_;
 };
+
+//---
 
 class CTcl {
  private:
@@ -970,24 +885,24 @@ class CTcl {
     }
 
    private:
-    CTcl *tcl_;
-    char  old_c_;
+    CTcl* tcl_   { nullptr };
+    char  old_c_ { '\0' };
   };
 
  public:
   CTcl(int argc, char **argv);
  ~CTcl();
 
-  bool getBreakFlag() const { return break_flag_; }
-  void setBreakFlag(bool flag=true) { break_flag_ = flag; }
+  bool getBreakFlag() const { return breakFlag_; }
+  void setBreakFlag(bool flag=true) { breakFlag_ = flag; }
 
-  bool getContinueFlag() const { return continue_flag_; }
-  void setContinueFlag(bool flag=true) { continue_flag_ = flag; }
+  bool getContinueFlag() const { return continueFlag_; }
+  void setContinueFlag(bool flag=true) { continueFlag_ = flag; }
 
-  bool getReturnFlag() const { return return_flag_; }
-  bool getReturnFlag(CTclValueRef &val) const { val = return_val_; return return_flag_; }
-  void setReturnFlag(bool flag=false) { return_flag_ = flag; }
-  void setReturnFlag(CTclValueRef val, bool flag=true) { return_val_ = val; return_flag_ = flag; }
+  bool getReturnFlag() const { return returnFlag_; }
+  bool getReturnFlag(CTclValueRef &val) const { val = returnVal_; return returnFlag_; }
+  void setReturnFlag(bool flag=false) { returnFlag_ = flag; }
+  void setReturnFlag(CTclValueRef val, bool flag=true) { returnVal_ = val; returnFlag_ = flag; }
 
   bool getDebug() const { return debug_; }
   void setDebug(bool debug=true) { debug_ = debug; }
@@ -1118,31 +1033,31 @@ class CTcl {
   bool isCompleteLine1(char endChar);
 
  private:
-  typedef std::vector<CTclCommand *>           CommandStack;
-  typedef std::vector<CTclProc *>              ProcStack;
-  typedef std::map<std::string,CTclCommand *>  CommandList;
-  typedef std::vector<CTclScope *>             ScopeStack;
-  typedef std::vector<CStrParse *>             ParseStack;
-  typedef std::map<std::string,FILE *>         FileMap;
-  typedef std::map<std::string,CTclTimer *>    TimerMap;
+  using CommandStack = std::vector<CTclCommand *>;
+  using ProcStack    = std::vector<CTclProc *>;
+  using CommandList  = std::map<std::string,CTclCommand *>;
+  using ScopeStack   = std::vector<CTclScope *>;
+  using ParseStack   = std::vector<CStrParse *>;
+  using FileMap      = std::map<std::string,FILE *>;
+  using TimerMap     = std::map<std::string,CTclTimer *>;
 
-  CStrParse    *parse_;
+  CStrParse*    parse_     { nullptr };
   ParseStack    parseStack_;
   CommandList   cmds_;
   ScopeStack    scopeStack_;
-  CTclScope    *scope_;
-  CTclScope    *gscope_;
+  CTclScope*    scope_     { nullptr };
+  CTclScope*    gscope_    { nullptr };
   CommandStack  cmdStack_;
   ProcStack     procStack_;
-  CHistory     *history_;
+  CHistory     *history_   { nullptr };
   FileMap       fileMap_;
   TimerMap      timerMap_;
-  char          separator_;
-  CBool         break_flag_;
-  CBool         continue_flag_;
-  CBool         return_flag_;
-  CTclValueRef  return_val_;
-  bool          debug_;
+  char          separator_ { ';' };
+  CBool         breakFlag_;
+  CBool         continueFlag_;
+  CBool         returnFlag_;
+  CTclValueRef  returnVal_;
+  bool          debug_     { false };
 };
 
 #endif

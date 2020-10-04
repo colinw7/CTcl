@@ -30,8 +30,8 @@ class CTclParse : public CStrParse {
   bool fillBuffer();
 
  private:
-  CTcl  *tcl_;
-  CFile *file_;
+  CTcl  *tcl_  { nullptr };
+  CFile *file_ { nullptr };
 };
 
 //------
@@ -72,17 +72,16 @@ class CTclTimer : public CTimer {
   }
 
  private:
-  CTcl         *tcl_ { nullptr };
-  std::string  script_;
-  uint         id_ { 0 };
-  bool         triggered_ { false };
+  CTcl*       tcl_       { nullptr };
+  std::string script_;
+  uint        id_        { 0 };
+  bool        triggered_ { false };
 };
 
 //------
 
 CTcl::
-CTcl(int argc, char **argv) :
- parse_(nullptr), scope_(nullptr), gscope_(nullptr), separator_(';'), debug_(false)
+CTcl(int argc, char **argv)
 {
   gscope_ = new CTclScope(this);
 
@@ -2273,7 +2272,7 @@ getArrayValue(const std::string &indexStr) const
   if (! hasValue())
     return CTclValueRef();
 
-  if (value_->getType() == CTclValue::ARRAY_TYPE)
+  if (value_->getType() == CTclValue::ValueType::ARRAY)
     return value_.cast<CTclArray>()->getValue(indexStr);
   else
     return CTclValueRef();
@@ -2283,7 +2282,7 @@ void
 CTclVariable::
 setArrayValue(const std::string &indexStr, CTclValueRef value)
 {
-  if (value_->getType() == CTclValue::ARRAY_TYPE)
+  if (value_->getType() == CTclValue::ValueType::ARRAY)
     value_.cast<CTclArray>()->setValue(indexStr, value);
 
   callNotifyProcs();
@@ -2294,9 +2293,9 @@ CTclVariable::
 appendValue(CTclValueRef value)
 {
   if (hasValue()) {
-    if      (value_->getType() == CTclValue::STRING_TYPE)
+    if      (value_->getType() == CTclValue::ValueType::STRING)
       value_.cast<CTclString>()->appendValue(value->toString());
-    else if (value_->getType() == CTclValue::LIST_TYPE)
+    else if (value_->getType() == CTclValue::ValueType::LIST)
       value_.cast<CTclList>()->addValue(value);
     else
       setValue(value);
@@ -2754,7 +2753,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     CTclValueRef value = scope->getVariableValue(varName);
 
-    bool is_array = (value.isValid() && value->getType() == CTclValue::VALUE_MAP_TYPE);
+    bool is_array = (value.isValid() && value->getType() == CTclValue::ValueType::VALUE_MAP);
 
     return CTclValueRef(tcl_->createValue(is_array));
   }
@@ -2766,7 +2765,7 @@ exec(const std::vector<CTclValueRef> &args)
     if (! value.isValid())
       return CTclValueRef();
 
-    if (value->getType() == CTclValue::ARRAY_TYPE) {
+    if (value->getType() == CTclValue::ValueType::ARRAY) {
       CTclArray *array = value.cast<CTclArray>();
 
       std::vector<std::string>  names;
@@ -2800,7 +2799,7 @@ exec(const std::vector<CTclValueRef> &args)
     if (! value.isValid())
       return CTclValueRef();
 
-    if (value->getType() == CTclValue::VALUE_MAP_TYPE) {
+    if (value->getType() == CTclValue::ValueType::VALUE_MAP) {
       CTclArray *array = value.cast<CTclArray>();
 
       std::vector<std::string> names;
@@ -2823,7 +2822,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     CTclValueRef list;
 
-    if (args[2]->getType() == CTclValue::LIST_TYPE)
+    if (args[2]->getType() == CTclValue::ValueType::LIST)
       list = args[2];
     else
       list = args[2]->toList(tcl_);
@@ -2887,7 +2886,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclCommand *cmd = tcl_->getCommand();
 
-  if (cmd->getType() & CTclCommand::COMMAND_TYPE_ITERATION) {
+  if (cmd->getType() & uint(CTclCommand::CommandType::ITERATION)) {
     tcl_->throwError("invoked \"continue\" outside of a loop");
     return CTclValueRef();
   }
@@ -3038,7 +3037,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclCommand *cmd = tcl_->getCommand();
 
-  if (cmd->getType() & CTclCommand::COMMAND_TYPE_ITERATION) {
+  if (cmd->getType() & uint(CTclCommand::CommandType::ITERATION)) {
     tcl_->throwError("invoked \"continue\" outside of a loop");
     return CTclValueRef();
   }
@@ -3662,7 +3661,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef varList;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     varList = args[0];
   else
     varList = args[0]->toList(tcl_);
@@ -3676,7 +3675,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef valList;
 
-  if (args[1]->getType() == CTclValue::LIST_TYPE)
+  if (args[1]->getType() == CTclValue::ValueType::LIST)
     valList = args[1];
   else
     valList = args[1]->toList(tcl_);
@@ -4301,7 +4300,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4357,7 +4356,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (value->getType() == CTclValue::LIST_TYPE)
+  if (value->getType() == CTclValue::ValueType::LIST)
     list = value;
   else
     list = value->toList(tcl_);
@@ -4398,7 +4397,7 @@ exec(const std::vector<CTclValueRef> &args)
   }
 
   if (numArgs == 1) {
-    if (args[0]->getType() == CTclValue::LIST_TYPE)
+    if (args[0]->getType() == CTclValue::ValueType::LIST)
       return args[0];
     else
       return args[0]->toList(tcl_);
@@ -4411,7 +4410,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4446,7 +4445,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4487,7 +4486,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4512,7 +4511,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4583,7 +4582,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4668,7 +4667,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4717,7 +4716,7 @@ exec(const std::vector<CTclValueRef> &args)
     for (uint i = 1; i < numArgs - 2; ++i) {
       CTclValueRef list;
 
-      if (value->getType() == CTclValue::LIST_TYPE)
+      if (value->getType() == CTclValue::ValueType::LIST)
         list = value;
       else
         list = value->toList(tcl_);
@@ -4732,7 +4731,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     CTclValueRef list;
 
-    if (value->getType() == CTclValue::LIST_TYPE)
+    if (value->getType() == CTclValue::ValueType::LIST)
       list = value;
     else
       list = value->toList(tcl_);
@@ -4767,7 +4766,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[0]->getType() == CTclValue::LIST_TYPE)
+  if (args[0]->getType() == CTclValue::ValueType::LIST)
     list = args[0];
   else
     list = args[0]->toList(tcl_);
@@ -4910,7 +4909,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   CTclValueRef list;
 
-  if (args[1]->getType() == CTclValue::LIST_TYPE)
+  if (args[1]->getType() == CTclValue::ValueType::LIST)
     list = args[1];
   else
     list = args[1]->toList(tcl_);
@@ -5677,7 +5676,7 @@ exec(const std::vector<CTclValueRef> &args)
     // single list of pattern body
     CTclValueRef list;
 
-    if (args[pos]->getType() == CTclValue::LIST_TYPE)
+    if (args[pos]->getType() == CTclValue::ValueType::LIST)
       list = args[pos];
     else
       list = args[pos]->toList(tcl_);
