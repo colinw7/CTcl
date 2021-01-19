@@ -22,17 +22,12 @@ static CEvalOp and_op_           = { "&&", 1 };
 static CEvalOp or_op_            = { "||", 0 };
 
 CEval::
-CEval() :
- last_op_   (NULL),
- force_real_(false),
- degrees_   (false),
- debug_     (false)
+CEval()
 {
 }
 
 CEval::
 CEval(const CEval &eval) :
- last_op_   (NULL),
  force_real_(eval.force_real_),
  degrees_   (eval.degrees_),
  debug_     (eval.debug_)
@@ -49,7 +44,7 @@ void
 CEval::
 reset()
 {
-  last_op_ = NULL;
+  last_op_ = nullptr;
 
   stack_.clear();
 }
@@ -111,7 +106,7 @@ eval1(CStrParse &parse, CEvalValueRef &result)
     else if (parse.isOneOf("+-*/%<>=!&|^")) {
       CEvalOp *op = readOp(parse);
 
-      if (op == NULL)
+      if (! op)
         return false;
 
       if (hasOperator() || ! hasValue()) {
@@ -238,14 +233,14 @@ eval1(CStrParse &parse, CEvalValueRef &result)
       CStrParse parse1(str1);
 
       while (! parse1.eof()) {
-        int pos1 = parse1.getPos();
+        int ppos1 = parse1.getPos();
 
         while (! parse1.eof() && ! parse1.isChar(','))
           parse1.skipChar();
 
-        int pos2 = parse1.getPos();
+        int ppos2 = parse1.getPos();
 
-        std::string arg = parse1.getAt(pos1, pos2 - pos1);
+        std::string arg = parse1.getAt(ppos1, ppos2 - ppos1);
 
         args.push_back(arg);
 
@@ -460,7 +455,7 @@ eval1(CStrParse &parse, CEvalValueRef &result)
       printStack();
   }
 
-  if (checkLastOperator(NULL)) {
+  if (checkLastOperator(nullptr)) {
     if (! evalLastOperator())
       return false;
 
@@ -492,7 +487,7 @@ CEvalOp *
 CEval::
 readOp(CStrParse &parse)
 {
-  CEvalOp *op = NULL;
+  CEvalOp *op = nullptr;
 
   char c;
 
@@ -628,7 +623,7 @@ void
 CEval::
 updateLastOp()
 {
-  last_op_ = NULL;
+  last_op_ = nullptr;
 
   uint num = stack_.size();
 
@@ -710,8 +705,8 @@ evalOperator(CEvalValueRef value1, CEvalOp *op, CEvalValueRef value2)
     int ivalue1 = value1->toInt();
     int ivalue2 = value2->toInt();
 
-    int    ivalue  = 0;
-    double rvalue  = 0;
+    int    ivalue = 0;
+    double rvalue = 0;
 
     bool is_real = false;
 
@@ -742,8 +737,8 @@ bool
 CEval::
 checkLastOperator(CEvalOp *op)
 {
-  if (last_op_ == NULL) return false;
-  if (op       == NULL) return true ;
+  if (! last_op_) return false;
+  if (! op      ) return true ;
 
   int prec1 = last_op_->precedence;
   int prec2 = op      ->precedence;
@@ -783,7 +778,7 @@ printStack()
     std::cout << " ";
   }
 
-  std::cout << std::endl;
+  std::cout << "\n";
 }
 
 double

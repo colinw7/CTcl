@@ -13,7 +13,7 @@ struct CEvalOp {
 
 class CEvalValue;
 
-typedef CRefPtr<CEvalValue> CEvalValueRef;
+using CEvalValueRef = CRefPtr<CEvalValue>;
 
 enum CEvalValueType {
   CEVAL_VALUE_REAL,
@@ -42,6 +42,8 @@ class CEvalValue {
   CEvalValueType type_;
 };
 
+//---
+
 class CEvalRealValue : public CEvalValue {
  public:
   CEvalRealValue(double value) :
@@ -60,6 +62,8 @@ class CEvalRealValue : public CEvalValue {
  protected:
   double value_;
 };
+
+//---
 
 class CEvalIntValue : public CEvalValue {
  public:
@@ -80,6 +84,8 @@ class CEvalIntValue : public CEvalValue {
   int value_;
 };
 
+//---
+
 class CEvalOperatorValue : public CEvalValue {
  public:
   CEvalOperatorValue(CEvalOp *op) :
@@ -94,6 +100,8 @@ class CEvalOperatorValue : public CEvalValue {
   CEvalOp *op_;
 };
 
+//---
+
 class CEval {
  public:
   CEval();
@@ -103,7 +111,6 @@ class CEval {
   virtual bool handleUnknown(CStrParse &) { return false; }
 
   void setDebug(bool debug=true) { debug_ = debug; }
-
   bool getDebug() const { return debug_; }
 
   void setForceReal(bool force_real=true) { force_real_ = force_real; }
@@ -147,13 +154,13 @@ class CEval {
   double randIn(double min_val, double max_val);
 
  protected:
-  typedef std::deque<CEvalValueRef> ValueStack;
+  using ValueStack = std::deque<CEvalValueRef>;
 
-  ValueStack  stack_;
-  CEvalOp    *last_op_;
-  bool        force_real_;
-  bool        degrees_;
-  bool        debug_;
+  ValueStack stack_;
+  CEvalOp*   last_op_    { nullptr };
+  bool       force_real_ { false };
+  bool       degrees_    { false };
+  bool       debug_      { false };
 };
 
 #endif

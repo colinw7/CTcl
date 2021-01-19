@@ -18,7 +18,6 @@ dirs:
 SRC = \
 CTcl.cpp \
 CEval.cpp \
-CFileMatch.cpp \
 
 OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 

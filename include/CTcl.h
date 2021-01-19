@@ -1041,23 +1041,23 @@ class CTcl {
   using FileMap      = std::map<std::string,FILE *>;
   using TimerMap     = std::map<std::string,CTclTimer *>;
 
-  CStrParse*    parse_     { nullptr };
-  ParseStack    parseStack_;
-  CommandList   cmds_;
-  ScopeStack    scopeStack_;
-  CTclScope*    scope_     { nullptr };
-  CTclScope*    gscope_    { nullptr };
-  CommandStack  cmdStack_;
-  ProcStack     procStack_;
-  CHistory     *history_   { nullptr };
-  FileMap       fileMap_;
-  TimerMap      timerMap_;
-  char          separator_ { ';' };
-  CBool         breakFlag_;
-  CBool         continueFlag_;
-  CBool         returnFlag_;
-  CTclValueRef  returnVal_;
-  bool          debug_     { false };
+  CStrParse*   parse_     { nullptr };
+  ParseStack   parseStack_;
+  CommandList  cmds_;
+  ScopeStack   scopeStack_;
+  CTclScope*   scope_     { nullptr };
+  CTclScope*   gscope_    { nullptr };
+  CommandStack cmdStack_;
+  ProcStack    procStack_;
+  CHistory*    history_   { nullptr };
+  FileMap      fileMap_;
+  TimerMap     timerMap_;
+  char         separator_ { ';' };
+  CBool        breakFlag_;
+  CBool        continueFlag_;
+  CBool        returnFlag_;
+  CTclValueRef returnVal_;
+  bool         debug_     { false };
 };
 
 #endif
