@@ -113,7 +113,7 @@ class CEval {
   void setDebug(bool debug=true) { debug_ = debug; }
   bool getDebug() const { return debug_; }
 
-  void setForceReal(bool force_real=true) { force_real_ = force_real; }
+  void setForceReal(bool forceReal=true) { forceReal_ = forceReal; }
 
   void setDegrees(bool degrees=true) { degrees_ = degrees; }
 
@@ -157,10 +157,10 @@ class CEval {
   using ValueStack = std::deque<CEvalValueRef>;
 
   ValueStack stack_;
-  CEvalOp*   last_op_    { nullptr };
-  bool       force_real_ { false };
-  bool       degrees_    { false };
-  bool       debug_      { false };
+  CEvalOp*   lastOp_    { nullptr };
+  bool       forceReal_ { false };
+  bool       degrees_   { false };
+  bool       debug_     { false };
 };
 
 #endif

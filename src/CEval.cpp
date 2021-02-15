@@ -28,9 +28,9 @@ CEval()
 
 CEval::
 CEval(const CEval &eval) :
- force_real_(eval.force_real_),
- degrees_   (eval.degrees_),
- debug_     (eval.debug_)
+ forceReal_(eval.forceReal_),
+ degrees_  (eval.degrees_),
+ debug_    (eval.debug_)
 {
 }
 
@@ -44,7 +44,7 @@ void
 CEval::
 reset()
 {
-  last_op_ = nullptr;
+  lastOp_ = nullptr;
 
   stack_.clear();
 }
@@ -92,7 +92,7 @@ eval1(CStrParse &parse, CEvalValueRef &result)
       if (! parse.readNumber(real, integer, is_real))
         return false;
 
-      if (! is_real && force_real_) {
+      if (! is_real && forceReal_) {
         real    = integer;
         is_real = true;
       }
@@ -598,7 +598,7 @@ pushOperator(CEvalOp *op)
 {
   stack_.push_back(CEvalValueRef(new CEvalOperatorValue(op)));
 
-  last_op_ = op;
+  lastOp_ = op;
 }
 
 bool
@@ -623,7 +623,7 @@ void
 CEval::
 updateLastOp()
 {
-  last_op_ = nullptr;
+  lastOp_ = nullptr;
 
   uint num = stack_.size();
 
@@ -631,7 +631,7 @@ updateLastOp()
     CEvalValueRef value = stack_[i];
 
     if (value->getType() == CEVAL_VALUE_OPERATOR)
-      last_op_ = value.cast<CEvalOperatorValue>()->getOp();
+      lastOp_ = value.cast<CEvalOperatorValue>()->getOp();
   }
 }
 
@@ -737,11 +737,11 @@ bool
 CEval::
 checkLastOperator(CEvalOp *op)
 {
-  if (! last_op_) return false;
-  if (! op      ) return true ;
+  if (! lastOp_) return false;
+  if (! op     ) return true ;
 
-  int prec1 = last_op_->precedence;
-  int prec2 = op      ->precedence;
+  int prec1 = lastOp_->precedence;
+  int prec2 = op     ->precedence;
 
   return (prec2 <= prec1);
 }
