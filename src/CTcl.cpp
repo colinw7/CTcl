@@ -441,7 +441,7 @@ readArgList(std::vector<CTclValueRef> &args)
       parse_->skipChar();
 
       std::string varName, indexName;
-      bool   is_array;
+      bool        is_array;
 
       if (! readVariableName(varName, indexName, is_array))
         return false;
@@ -1991,7 +1991,7 @@ eof() const
   if (! CStrParse::eof())
     return false;
 
-  CTclParse *th = const_cast<CTclParse *>(this);
+  auto *th = const_cast<CTclParse *>(this);
 
   th->fillBuffer();
 
