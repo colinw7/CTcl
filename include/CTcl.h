@@ -153,8 +153,8 @@ class CTclArray : public CTclValue {
   int cmp(CTclValueRef rhs) const {
     CTclArray *array = rhs.cast<CTclArray>();
 
-    uint numValues1 =        values_.size();
-    uint numValues2 = array->values_.size();
+    uint numValues1 = uint(       values_.size());
+    uint numValues2 = uint(array->values_.size());
 
     if      (numValues1 < numValues2) return -1;
     else if (numValues1 > numValues2) return  1;
@@ -238,8 +238,8 @@ class CTclList : public CTclValue {
   int cmp(CTclValueRef rhs) const {
     CTclList *list = rhs.cast<CTclList>();
 
-    uint numValues1 =       values_.size();
-    uint numValues2 = list->values_.size();
+    uint numValues1 = uint(      values_.size());
+    uint numValues2 = uint(list->values_.size());
 
     if      (numValues1 < numValues2) return -1;
     else if (numValues1 > numValues2) return  1;
@@ -260,7 +260,7 @@ class CTclList : public CTclValue {
 
   CTclValueRef toList(CTcl *) const { return CTclValueRef(dup()); }
 
-  uint getLength() const { return values_.size(); }
+  uint getLength() const { return uint(values_.size()); }
 
   CTclValueRef getIndexValue(uint i) const {
     assert(i < values_.size());
