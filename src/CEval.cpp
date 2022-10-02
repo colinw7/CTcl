@@ -248,7 +248,7 @@ eval1(CStrParse &parse, CEvalValueRef &result)
           parse1.skipChar();
       }
 
-      uint num_args = args.size();
+      auto num_args = args.size();
 
       std::vector<CEvalValueRef> arg_vals;
 
@@ -463,7 +463,7 @@ eval1(CStrParse &parse, CEvalValueRef &result)
       printStack();
   }
 
-  uint size = stack_.size();
+  auto size = stack_.size();
 
   while (size > 1) {
     if (size < 3) return false;
@@ -625,7 +625,7 @@ updateLastOp()
 {
   lastOp_ = nullptr;
 
-  uint num = stack_.size();
+  auto num = stack_.size();
 
   for (uint i = 0; i < num; ++i) {
     CEvalValueRef value = stack_[i];
@@ -770,7 +770,7 @@ void
 CEval::
 printStack()
 {
-  uint num = stack_.size();
+  auto num = stack_.size();
 
   for (uint i = 0; i < num; ++i) {
     stack_[i]->print();
