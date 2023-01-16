@@ -50,14 +50,14 @@ class CEvalRealValue : public CEvalValue {
    CEvalValue(CEVAL_VALUE_REAL), value_(value) {
   }
 
-  bool isValue() const { return true; }
+  bool isValue() const override { return true; }
 
   double getValue() const { return value_; }
 
-  double toReal() const { return value_; }
-  int    toInt () const { return int(value_); }
+  double toReal() const override { return value_; }
+  int    toInt () const override { return int(value_); }
 
-  void print();
+  void print() override;
 
  protected:
   double value_;
@@ -71,14 +71,14 @@ class CEvalIntValue : public CEvalValue {
    CEvalValue(CEVAL_VALUE_INTEGER), value_(value) {
   }
 
-  bool isValue() const { return true; }
+  bool isValue() const override { return true; }
 
   int getValue() const { return value_; }
 
-  double toReal() const { return double(value_); }
-  int    toInt () const { return value_; }
+  double toReal() const override { return double(value_); }
+  int    toInt () const override { return value_; }
 
-  void print();
+  void print() override;
 
  protected:
   int value_;
@@ -94,7 +94,7 @@ class CEvalOperatorValue : public CEvalValue {
 
   CEvalOp *getOp() const { return op_; }
 
-  void print();
+  void print() override;
 
  protected:
   CEvalOp *op_;
