@@ -87,7 +87,7 @@ CTcl(int argc, char **argv)
 
   pushScope(gscope_);
 
-  addVariable("argc" , createValue(argc - 1));
+  addVariable("argc" , createValue(long(argc - 1)));
   addVariable("argv0", createValue(argv[0]));
 
   std::vector<std::string> strs;
@@ -160,7 +160,7 @@ CTcl(int argc, char **argv)
   addCommand(new CTclLSortCommand     (this));
   addCommand(new CTclNamespaceCommand (this));
   addCommand(new CTclOpenCommand      (this));
-//addCommand(new CTclPackageCommand   (this));
+  addCommand(new CTclPackageCommand   (this));
 //addCommand(new CTclPArrayCommand    (this));
   addCommand(new CTclPidCommand       (this));
   addCommand(new CTclProcCommand      (this));
@@ -194,10 +194,8 @@ CTcl(int argc, char **argv)
 CTcl::
 ~CTcl()
 {
-  CommandList::iterator p1, p2;
-
-  for (p1 = cmds_.begin(), p2 = cmds_.end(); p1 != p2; ++p1)
-    delete (*p1).second;
+  for (auto &pc : cmds_)
+    delete pc.second;
 
   delete scope_;
 
@@ -287,7 +285,7 @@ CTcl::
 parseFile(const std::string &filename)
 {
   if (! CFile::isRegular(filename)) {
-    std::cerr << "Invalid file " << filename << std::endl;
+    std::cerr << "Invalid file " << filename << "\n";
     return false;
   }
 
@@ -304,16 +302,16 @@ parseFile(const std::string &filename)
         break;
       }
 
-      CTclValueRef value = evalArgs(args);
+      auto value = evalArgs(args);
 
       if (getDebug() && value.isValid()) {
         value->print(std::cerr);
 
-        std::cerr << std::endl;
+        std::cerr << "\n";
       }
     }
     catch (CTclError err) {
-      std::cerr << err.getMsg() << std::endl;
+      std::cerr << err.getMsg() << "\n";
       break;
     }
   }
@@ -335,7 +333,7 @@ parseLine(const std::string &str)
     addHistory(str);
   }
   catch (CTclError err) {
-    std::cerr << err.getMsg() << std::endl;
+    std::cerr << err.getMsg() << "\n";
   }
 
   return value;
@@ -364,7 +362,7 @@ parseString(const std::string &str)
     if (getDebug() && value.isValid()) {
       value->print(std::cerr);
 
-      std::cerr << std::endl;
+      std::cerr << "\n";
     }
 
     if (getBreakFlag() || getContinueFlag() || getReturnFlag())
@@ -401,10 +399,10 @@ readArgList(std::vector<CTclValueRef> &args)
       if (! readExecString(args1))
         return false;
 
-      CTclValueRef value = evalArgs(args1);
+      auto value = evalArgs(args1);
 
       if (! value.isValid()) {
-        std::cerr << "Invalid value" << std::endl;
+        std::cerr << "Invalid value\n";
         return false;
       }
 
@@ -540,7 +538,7 @@ CTclList *
 CTcl::
 stringToList(const std::string &str)
 {
-  CTclList *list = new CTclList;
+  auto *list = new CTclList;
 
   startStringParse(str);
 
@@ -580,7 +578,7 @@ stringToList(const std::string &str)
           char c;
 
           if (! parse_->readChar(&c)) {
-            std::cerr << "Invalid char after \\" << std::endl;
+            std::cerr << "Invalid char after \\\n";
             break;
           }
 
@@ -590,7 +588,7 @@ stringToList(const std::string &str)
           char c;
 
           if (! parse_->readChar(&c)) {
-            std::cerr << "Invalid char" << std::endl;
+            std::cerr << "Invalid char\n";
             break;
           }
 
@@ -630,7 +628,7 @@ readLiteralString(std::string &str)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Unterminated string" << std::endl;
+        std::cerr << "Unterminated string\n";
         return false;
       }
 
@@ -639,7 +637,7 @@ readLiteralString(std::string &str)
   }
 
   if (! parse_->isChar('}')) {
-    std::cerr << "Unterminated string" << std::endl;
+    std::cerr << "Unterminated string\n";
     return false;
   }
 
@@ -663,10 +661,10 @@ readDoubleQuotedString(std::string &str)
       if (! readExecString(args1))
         return false;
 
-      CTclValueRef value = evalArgs(args1);
+      auto value = evalArgs(args1);
 
       if (! value.isValid()) {
-        std::cerr << "Invalid value" << std::endl;
+        std::cerr << "Invalid value\n";
         return false;
       }
 
@@ -701,7 +699,7 @@ readDoubleQuotedString(std::string &str)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Invalid char after \\" << std::endl;
+        std::cerr << "Invalid char after \\\n";
         return false;
       }
 
@@ -723,7 +721,7 @@ readDoubleQuotedString(std::string &str)
 
           while (! parse_->eof()) {
             if (! parse_->readChar(&c)) {
-              std::cerr << "Invalid octal" << std::endl;
+              std::cerr << "Invalid octal\n";
               return false;
             }
 
@@ -750,7 +748,7 @@ readDoubleQuotedString(std::string &str)
 
           while (! parse_->eof()) {
             if (! parse_->readChar(&c)) {
-              std::cerr << "Invalid hex" << std::endl;
+              std::cerr << "Invalid hex\n";
               return false;
             }
 
@@ -781,7 +779,7 @@ readDoubleQuotedString(std::string &str)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Invalid char" << std::endl;
+        std::cerr << "Invalid char\n";
         return false;
       }
 
@@ -806,7 +804,7 @@ readSingleQuotedString(std::string &str)
     char c;
 
     if (! parse_->readChar(&c)) {
-      std::cerr << "Unterminated string" << std::endl;
+      std::cerr << "Unterminated string\n";
       return false;
     }
 
@@ -834,7 +832,7 @@ readVariableName(std::string &varName, std::string &indexName, bool &is_array)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Missing variable char" << std::endl;
+        std::cerr << "Missing variable char\n";
         return false;
       }
 
@@ -863,7 +861,7 @@ readVariableName(std::string &varName, std::string &indexName, bool &is_array)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Missing variable char" << std::endl;
+        std::cerr << "Missing variable char\n";
         return false;
       }
 
@@ -879,7 +877,7 @@ readVariableName(std::string &varName, std::string &indexName, bool &is_array)
     }
 
     if (depth != 0) {
-      std::cerr << "Invalid () nesting" << std::endl;
+      std::cerr << "Invalid () nesting\n";
       return false;
     }
 
@@ -907,10 +905,10 @@ readWord(std::string &str, char endChar)
       if (! readExecString(args1))
         return false;
 
-      CTclValueRef value = evalArgs(args1);
+      auto value = evalArgs(args1);
 
       if (! value.isValid()) {
-        std::cerr << "Invalid value" << std::endl;
+        std::cerr << "Invalid value\n";
         return false;
       }
 
@@ -945,7 +943,7 @@ readWord(std::string &str, char endChar)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Invalid char after \\" << std::endl;
+        std::cerr << "Invalid char after \\\n";
         return false;
       }
 
@@ -955,7 +953,7 @@ readWord(std::string &str, char endChar)
       char c;
 
       if (! parse_->readChar(&c)) {
-        std::cerr << "Invalid char" << std::endl;
+        std::cerr << "Invalid char\n";
         return false;
       }
 
@@ -1060,7 +1058,7 @@ startCommand(CTclCommand *cmd)
 {
   cmdStack_.push_back(cmd);
 
-  if (getDebug()) std::cerr << "Start: " << cmdStack_.back()->getName() << std::endl;
+  if (getDebug()) std::cerr << "Start: " << cmdStack_.back()->getName() << "\n";
 }
 
 void
@@ -1069,7 +1067,7 @@ endCommand()
 {
   assert(! cmdStack_.empty());
 
-  if (getDebug()) std::cerr << "End: " << cmdStack_.back()->getName() << std::endl;
+  if (getDebug()) std::cerr << "End: " << cmdStack_.back()->getName() << "\n";
 
   cmdStack_.pop_back();
 }
@@ -1089,7 +1087,7 @@ startProc(CTclProc *proc)
 {
   procStack_.push_back(proc);
 
-  if (getDebug()) std::cerr << "Start: " << procStack_.back()->getName() << std::endl;
+  if (getDebug()) std::cerr << "Start: " << procStack_.back()->getName() << "\n";
 }
 
 void
@@ -1098,7 +1096,7 @@ endProc()
 {
   assert(! procStack_.empty());
 
-  if (getDebug()) std::cerr << "End: " << procStack_.back()->getName() << std::endl;
+  if (getDebug()) std::cerr << "End: " << procStack_.back()->getName() << "\n";
 
   procStack_.pop_back();
 }
@@ -1135,10 +1133,8 @@ void
 CTcl::
 getCommandNames(std::vector<std::string> &names) const
 {
-  CommandList::const_iterator p1, p2;
-
-  for (p1 = cmds_.begin(), p2 = cmds_.end(); p1 != p2; ++p1)
-    names.push_back((*p1).first);
+  for (const auto &pc : cmds_)
+    names.push_back(pc.first);
 }
 
 CTclVariableRef
@@ -1190,7 +1186,7 @@ getVariable(const std::string &varName)
   uint num_names = names.size();
 
   if (num_names > 1) {
-    CTclScope *scope = getGlobalScope();
+    auto *scope = getGlobalScope();
 
     for (uint i = 0; i < num_names - 1; ++i) {
       scope = scope->getNamedScope(names[i]);
@@ -1199,30 +1195,30 @@ getVariable(const std::string &varName)
         return CTclVariableRef();
     }
 
-    CTclVariableRef var = scope->getVariable(names[num_names - 1]);
+    auto var = scope->getVariable(names[num_names - 1]);
 
     if (var.isValid())
       return var;
   }
   else {
     if (global) {
-      CTclScope *scope = getGlobalScope();
+      auto *scope = getGlobalScope();
 
-      CTclVariableRef var = scope->getVariable(names[0]);
+      auto var = scope->getVariable(names[0]);
 
       if (var.isValid())
         return var;
     }
     else {
-      CTclScope *scope = getScope();
+      auto *scope = getScope();
 
       while (scope) {
-        CTclVariableRef var = scope->getVariable(varName);
+        auto var = scope->getVariable(varName);
 
         if (var.isValid())
           return var;
 
-        CTclScope *parentScope = scope->parentScope();
+        auto *parentScope = scope->parentScope();
 
         if (parentScope == nullptr)
           break;
@@ -1239,7 +1235,7 @@ CTclValueRef
 CTcl::
 getVariableValue(const std::string &varName)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (var.isValid())
     return var->getValue();
@@ -1251,17 +1247,17 @@ void
 CTcl::
 setVariableValue(const std::string &varName, CTclValueRef value)
 {
-  CTclScope *scope = getScope();
+  auto *scope = getScope();
 
   while (scope) {
-    CTclVariableRef var = scope->getVariable(varName);
+    auto var = scope->getVariable(varName);
 
     if (var.isValid()) {
       var->setValue(value);
       return;
     }
 
-    CTclScope *parentScope = scope->parentScope();
+    auto *parentScope = scope->parentScope();
 
     if (parentScope == nullptr)
       break;
@@ -1277,7 +1273,7 @@ CTclValueRef
 CTcl::
 getArrayVariableValue(const std::string &varName, const std::string &indexStr)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (var.isValid())
     return var->getArrayValue(indexStr);
@@ -1289,10 +1285,10 @@ void
 CTcl::
 setArrayVariableValue(const std::string &varName, const std::string &indexStr, CTclValueRef value)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (! var.isValid()) {
-    CTclArray *array = new CTclArray;
+    auto *array = new CTclArray;
 
     array->setValue(indexStr, value);
 
@@ -1320,10 +1316,10 @@ CTclProc *
 CTcl::
 getProc(const std::string &name)
 {
-  CTclScope *scope = getScope();
+  auto *scope = getScope();
 
   while (scope) {
-    CTclProc *proc = scope->getProc(name);
+    auto *proc = scope->getProc(name);
 
     if (proc) return proc;
 
@@ -1401,7 +1397,7 @@ std::string
 CTcl::
 addTimer(int ms, const std::string &script)
 {
-  CTclTimer *timer = new CTclTimer(this, ms, script);
+  auto *timer = new CTclTimer(this, ms, script);
 
   return timer->getName();
 }
@@ -1445,10 +1441,8 @@ void
 CTcl::
 getTimerNames(std::vector<std::string> &names)
 {
-  TimerMap::const_iterator p1, p2;
-
-  for (p1 = timerMap_.begin(), p2 = timerMap_.end(); p1 != p2; ++p1)
-    names.push_back((*p1).first);
+  for (const auto &pt : timerMap_)
+    names.push_back(pt.first);
 }
 
 CTclTimer *
@@ -1469,10 +1463,8 @@ update(bool /*idletasks*/)
 {
   std::vector<CTclTimer *> timers;
 
-  TimerMap::const_iterator p1, p2;
-
-  for (p1 = timerMap_.begin(), p2 = timerMap_.end(); p1 != p2; ++p1) {
-    CTclTimer *timer = (*p1).second;
+  for (const auto &pt : timerMap_) {
+    auto *timer = pt.second;
 
     if (timer->isTriggered())
       timers.push_back(timer);
@@ -1486,14 +1478,14 @@ update(bool /*idletasks*/)
 
 CTclValueRef
 CTcl::
-createValue(int value) const
+createValue(long value) const
 {
   return CTclValueRef(new CTclString(CStrUtil::toString(value)));
 }
 
 CTclValueRef
 CTcl::
-createValue(uint value) const
+createValue(ulong value) const
 {
   return CTclValueRef(new CTclString(CStrUtil::toString(value)));
 }
@@ -1516,7 +1508,7 @@ CTclValueRef
 CTcl::
 createValue(const std::vector<std::string> &strs) const
 {
-  CTclList *list = new CTclList;
+  auto *list = new CTclList;
 
   uint numStrs = strs.size();
 
@@ -1530,7 +1522,7 @@ CTclValueRef
 CTcl::
 createValue(const std::vector<CTclValueRef> &values) const
 {
-  CTclList *list = new CTclList;
+  auto *list = new CTclList;
 
   uint numValues = values.size();
 
@@ -1575,7 +1567,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
 
   std::string name = args[0]->toString();
 
-  CTclCommand *cmd = getCommand(name);
+  auto *cmd = getCommand(name);
 
   if (cmd) {
     std::vector<CTclValueRef> args1;
@@ -1591,18 +1583,18 @@ evalArgs(const std::vector<CTclValueRef> &args)
     }
 
     if (getDebug())
-      std::cerr << std::endl;
+      std::cerr << "\n";
 
     startCommand(cmd);
 
-    CTclValueRef ret = cmd->exec(args1);
+    auto ret = cmd->exec(args1);
 
     endCommand();
 
     return ret;
   }
   else {
-    CTclProc *proc = getProc(name);
+    auto *proc = getProc(name);
 
     if (proc) {
       std::vector<CTclValueRef> args1;
@@ -1612,7 +1604,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
 
       startProc(proc);
 
-      CTclValueRef ret = proc->exec(args1);
+      auto ret = proc->exec(args1);
 
       endProc();
 
@@ -1632,7 +1624,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
     }
 
-    CCommand *command = new CCommand(name, path);
+    auto *command = new CCommand(name, path);
 
     cmds.push_back(command);
 
@@ -1795,7 +1787,7 @@ evalArgs(const std::vector<CTclValueRef> &args)
     uint num_cmds = cmds.size();
 
     for (uint i = 0; i < num_cmds; ++i) {
-      CCommand *cmd = cmds[i];
+      auto *cmd = cmds[i];
 
       if (i == 0)
         cmd->setProcessGroupLeader();
@@ -1804,13 +1796,13 @@ evalArgs(const std::vector<CTclValueRef> &args)
     }
 
     for (uint i = 0; i < num_cmds; ++i) {
-      CCommand *cmd = cmds[i];
+      auto *cmd = cmds[i];
 
       cmd->start();
     }
 
     for (uint i = 0; i < num_cmds; ++i) {
-      CCommand *cmd = cmds[i];
+      auto *cmd = cmds[i];
 
       cmd->wait();
     }
@@ -2018,7 +2010,7 @@ CTclVariableRef
 CTclScope::
 addVariable(const std::string &varName, CTclValueRef value)
 {
-  CTclVariable *var = new CTclVariable(value);
+  auto *var = new CTclVariable(value);
 
   return addVariable(varName, CTclVariableRef(var));
 }
@@ -2052,7 +2044,7 @@ CTclValueRef
 CTclScope::
 getVariableValue(const std::string &varName)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (var.isValid())
     return var->getValue();
@@ -2064,7 +2056,7 @@ CTclValueRef
 CTclScope::
 getArrayVariableValue(const std::string &varName, const std::string &indexStr)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (var.isValid())
     return var->getArrayValue(indexStr);
@@ -2076,10 +2068,10 @@ void
 CTclScope::
 setArrayVariableValue(const std::string &varName, const std::string &indexStr, CTclValueRef value)
 {
-  CTclVariableRef var = getVariable(varName);
+  auto var = getVariable(varName);
 
   if (! var.isValid()) {
-    CTclArray *array = new CTclArray;
+    auto *array = new CTclArray;
 
     array->setValue(indexStr, value);
 
@@ -2093,10 +2085,8 @@ void
 CTclScope::
 getVariableNames(std::vector<std::string> &names) const
 {
-  VariableList::const_iterator p1, p2;
-
-  for (p1 = vars_.begin(), p2 = vars_.end(); p1 != p2; ++p1) {
-    const std::string &name = (*p1).first;
+  for (const auto &pv : vars_) {
+    const auto &name = pv.first;
 
     names.push_back(name);
   }
@@ -2109,12 +2099,12 @@ setVariableValue(const std::string &varName, CTclValueRef value)
   auto p = vars_.find(varName);
 
   if (p == vars_.end()) {
-    CTclVariable *var = new CTclVariable;
+    auto *var = new CTclVariable;
 
     p = vars_.insert(p, VariableList::value_type(varName, CTclVariableRef(var)));
   }
 
-  CTclVariableRef var = (*p).second;
+  auto var = (*p).second;
 
   var->setValue(value);
 }
@@ -2135,7 +2125,7 @@ defineProc(const std::string &name, const std::vector<std::string> &args, CTclVa
 {
   removeProc(name);
 
-  CTclProc *proc = new CTclProc(tcl_, name, args, body);
+  auto *proc = new CTclProc(tcl_, name, args, body);
 
   procs_[name] = proc;
 
@@ -2161,7 +2151,7 @@ removeProc(const std::string &name)
   auto p = procs_.find(name);
 
   if (p != procs_.end()) {
-    CTclProc *proc = (*p).second;
+    auto *proc = (*p).second;
 
     procs_.erase(p);
 
@@ -2173,10 +2163,8 @@ void
 CTclScope::
 getProcNames(std::vector<std::string> &names)
 {
-  ProcList::const_iterator p1, p2;
-
-  for (p1 = procs_.begin(), p2 = procs_.end(); p1 != p2; ++p1) {
-    CTclProc *proc = (*p1).second;
+  for (const auto &pp : procs_) {
+    auto *proc = pp.second;
 
     names.push_back(proc->getName());
   }
@@ -2194,7 +2182,7 @@ getNamedScope(const std::string &name, bool create_it)
   if (! create_it)
     return nullptr;
 
-  CTclScope *scope = new CTclScope(tcl_, this, name);
+  auto *scope = new CTclScope(tcl_, this, name);
 
   scopeMap_[name] = scope;
 
@@ -2321,10 +2309,8 @@ void
 CTclVariable::
 callNotifyProcs()
 {
-  VariableProcList::const_iterator p1, p2;
-
-  for (p1 = notifyProcs_.begin(), p2 = notifyProcs_.end(); p1 != p2; ++p1)
-    (*p1)->notify(this);
+  for (auto *pn : notifyProcs_)
+    pn->notify(this);
 }
 
 //----------
@@ -2364,7 +2350,7 @@ toString() const
 
 bool
 CTclString::
-toInt(int &i) const
+toInt(long &i) const
 {
   i = 0;
 
@@ -2373,7 +2359,7 @@ toInt(int &i) const
   if (! CStrUtil::toInteger(str_, &l))
     return false;
 
-  i = int(l);
+  i = l;
 
   return true;
 }
@@ -2408,7 +2394,7 @@ toList(CTcl *tcl) const
 {
   std::vector<CTclValueRef> args;
 
-  CTclList *list = tcl->stringToList(str_);
+  auto *list = tcl->stringToList(str_);
 
   return CTclValueRef(list);
 }
@@ -2426,14 +2412,12 @@ void
 CTclArray::
 print(std::ostream &os) const
 {
-  ValueMap::const_iterator p1, p2;
-
   os << "{";
 
-  for (p1 = values_.begin(), p2 = values_.end(); p1 != p2; ++p1) {
-    os << " " << (*p1).first << "=";
+  for (const auto &pv : values_) {
+    os << " " << pv.first << "=";
 
-    (*p1).second->print(os);
+    pv.second->print(os);
   }
 
   os << "}";
@@ -2461,10 +2445,8 @@ toString() const
 {
   std::string str;
 
-  ValueList::const_iterator p1, p2;
-
-  for (p1 = values_.begin(), p2 = values_.end(); p1 != p2; ++p1) {
-    std::string str1 = (*p1)->toString();
+  for (const auto &pv : values_) {
+    auto str1 = pv->toString();
 
     if (! str.empty()) str += " ";
 
@@ -2490,7 +2472,7 @@ print(std::ostream &os) const
 
 bool
 CTclValue::
-checkInt(CTcl *tcl, int &i)
+checkInt(CTcl *tcl, long &i)
 {
   bool ok = toInt(i);
 
@@ -2514,7 +2496,7 @@ checkReal(CTcl *tcl, double &r)
 
 bool
 CTclValue::
-toIndex(CTcl *tcl, int &ind)
+toIndex(CTcl *tcl, long &ind)
 {
   bool ok = toInt(ind);
 
@@ -2556,7 +2538,7 @@ bool
 CTclValue::
 evalBool(CTcl *tcl) const
 {
-  CTclValueRef value = eval(tcl);
+  auto value = eval(tcl);
 
   return value->toBool();
 }
@@ -2638,7 +2620,7 @@ exec(const std::vector<CTclValueRef> &args)
       for (uint i = 1; i < numArgs; ++i) {
         const std::string &id = args[i]->toString();
 
-        CTclTimer *timer = tcl_->getTimer(id);
+        auto *timer = tcl_->getTimer(id);
 
         if (timer) {
           std::vector<CTclValueRef> values1;
@@ -2656,7 +2638,7 @@ exec(const std::vector<CTclValueRef> &args)
     }
   }
   else {
-    int ms;
+    long ms;
 
     bool ok = args[0]->toInt(ms);
 
@@ -2699,11 +2681,11 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
   const std::string &varName = args[0]->toString();
 
-  CTclVariableRef var = scope->getVariable(varName);
+  auto var = scope->getVariable(varName);
 
   if (! var.isValid()) {
     scope->setVariableValue(varName, args[1]);
@@ -2749,24 +2731,24 @@ exec(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
     }
 
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
-    CTclValueRef value = scope->getVariableValue(varName);
+    auto value = scope->getVariableValue(varName);
 
     bool is_array = (value.isValid() && value->getType() == CTclValue::ValueType::VALUE_MAP);
 
-    return CTclValueRef(tcl_->createValue(is_array));
+    return CTclValueRef(tcl_->createValue(long(is_array)));
   }
   else if (cmd == "get") {
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
-    CTclValueRef value = scope->getVariableValue(varName);
+    auto value = scope->getVariableValue(varName);
 
     if (! value.isValid())
       return CTclValueRef();
 
     if (value->getType() == CTclValue::ValueType::ARRAY) {
-      CTclArray *array = value.cast<CTclArray>();
+      auto *array = value.cast<CTclArray>();
 
       std::vector<std::string>  names;
       std::vector<CTclValueRef> values;
@@ -2775,10 +2757,10 @@ exec(const std::vector<CTclValueRef> &args)
 
       uint num_names = names.size();
 
-      CTclList *list = new CTclList;
+      auto *list = new CTclList;
 
       for (uint i = 0; i < num_names; ++i) {
-        CTclList *list1 = new CTclList;
+        auto *list1 = new CTclList;
 
         list1->addValue(tcl_->createValue(names[i]));
         list1->addValue(values[i]);
@@ -2792,15 +2774,15 @@ exec(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
   }
   else if (cmd == "names") {
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
-    CTclValueRef value = scope->getVariableValue(varName);
+    auto value = scope->getVariableValue(varName);
 
     if (! value.isValid())
       return CTclValueRef();
 
     if (value->getType() == CTclValue::ValueType::VALUE_MAP) {
-      CTclArray *array = value.cast<CTclArray>();
+      auto *array = value.cast<CTclArray>();
 
       std::vector<std::string> names;
 
@@ -2834,16 +2816,16 @@ exec(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
     }
 
-    CTclArray *array = new CTclArray;
+    auto *array = new CTclArray;
 
     for (uint i = 0; i < length; i += 2) {
-      CTclValueRef name  = list->getIndexValue(i    );
-      CTclValueRef value = list->getIndexValue(i + 1);
+      auto name  = list->getIndexValue(i    );
+      auto value = list->getIndexValue(i + 1);
 
       array->setValue(name->toString(), value);
     }
 
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
     scope->setVariableValue(varName, CTclValueRef(array));
 
@@ -2884,7 +2866,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclCommand *cmd = tcl_->getCommand();
+  auto *cmd = tcl_->getCommand();
 
   if (cmd->getType() & uint(CTclCommand::CommandType::ITERATION)) {
     tcl_->throwError("invoked \"continue\" outside of a loop");
@@ -2924,13 +2906,13 @@ exec(const std::vector<CTclValueRef> &args)
     const std::string &varName = args[1]->toString();
 
     if (isError) {
-      CTclScope *scope = tcl_->getScope();
+      auto *scope = tcl_->getScope();
 
       scope->setVariableValue(varName, tcl_->createValue(errMsg));
     }
   }
 
-  return CTclValueRef(tcl_->createValue(! isError));
+  return CTclValueRef(tcl_->createValue(long(! isError)));
 }
 
 //----------
@@ -2992,7 +2974,7 @@ exec(const std::vector<CTclValueRef> &args)
   else if (opt == "seconds") {
     time_t t = time(nullptr);
 
-    return CTclValueRef(tcl_->createValue((int) t));
+    return CTclValueRef(tcl_->createValue(long(t)));
   }
   else {
     tcl_->throwError("bad option \"" + opt + "\": must be clicks, format, scan, or seconds");
@@ -3035,7 +3017,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclCommand *cmd = tcl_->getCommand();
+  auto *cmd = tcl_->getCommand();
 
   if (cmd->getType() & uint(CTclCommand::CommandType::ITERATION)) {
     tcl_->throwError("invoked \"continue\" outside of a loop");
@@ -3058,7 +3040,7 @@ exec(const std::vector<CTclValueRef> &args)
   for (uint i = 0; i < numArgs; ++i) {
     args[i]->print(std::cout);
 
-    std::cout << std::endl;
+    std::cout << "\n";
   }
 
   return CTclValueRef();
@@ -3094,7 +3076,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   bool flag = feof(fp);
 
-  return CTclValueRef(tcl_->createValue(flag));
+  return CTclValueRef(tcl_->createValue(long(flag)));
 }
 
 //----------
@@ -3146,7 +3128,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CCommand *command = new CCommand(name, path);
+  auto *command = new CCommand(name, path);
 
   cmds.push_back(command);
 
@@ -3273,12 +3255,12 @@ exec(const std::vector<CTclValueRef> &args)
 
   uint num_cmds = cmds.size();
 
-  CCommand *cmd2 = cmds[num_cmds - 1];
+  auto *cmd2 = cmds[num_cmds - 1];
 
   cmd2->addStringDest(dest);
 
   for (uint i = 0; i < num_cmds; ++i) {
-    CCommand *cmd = cmds[i];
+    auto *cmd = cmds[i];
 
     if (i == 0)
       cmd->setProcessGroupLeader();
@@ -3287,13 +3269,13 @@ exec(const std::vector<CTclValueRef> &args)
   }
 
   for (uint i = 0; i < num_cmds; ++i) {
-    CCommand *cmd = cmds[i];
+    auto *cmd = cmds[i];
 
     cmd->start();
   }
 
   for (uint i = 0; i < num_cmds; ++i) {
-    CCommand *cmd = cmds[i];
+    auto *cmd = cmds[i];
 
     cmd->wait();
   }
@@ -3319,7 +3301,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  int code = 0;
+  long code = 0;
 
   if (numArgs > 0) {
     if (! args[0]->checkInt(tcl_, code))
@@ -3373,9 +3355,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &fileName = args[1]->toString();
 
-    int atime = CFile::getATime(fileName);
+    auto atime = CFile::getATime(fileName);
 
-    return CTclValueRef(tcl_->createValue(atime));
+    return CTclValueRef(tcl_->createValue(long(atime)));
   }
   else if (option == "attributes") {
     if (numArgs != 2) {
@@ -3401,7 +3383,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef(tcl_->createValue(str));
   }
   else if (option == "channels") {
-    CTclList *list = new CTclList;
+    auto *list = new CTclList;
 
     if (numArgs == 1) {
       list->addValue(tcl_->createValue("stdin"));
@@ -3427,7 +3409,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_exec = CFile::isExecutable(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_exec));
+    return CTclValueRef(tcl_->createValue(long(is_exec)));
   }
   else if (option == "exists") {
     if (numArgs != 2) {
@@ -3439,7 +3421,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool exists = CFile::exists(fileName);
 
-    return CTclValueRef(tcl_->createValue(exists));
+    return CTclValueRef(tcl_->createValue(long(exists)));
   }
   else if (option == "extension") {
     if (numArgs != 2) {
@@ -3466,7 +3448,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_dir = CFile::isDirectory(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_dir));
+    return CTclValueRef(tcl_->createValue(long(is_dir)));
   }
   else if (option == "isfile") {
     if (numArgs != 2) {
@@ -3478,7 +3460,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_dir = CFile::isRegular(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_dir));
+    return CTclValueRef(tcl_->createValue(long(is_dir)));
   }
   else if (option == "join") {
   }
@@ -3496,9 +3478,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &fileName = args[1]->toString();
 
-    int mtime = CFile::getMTime(fileName);
+    auto mtime = CFile::getMTime(fileName);
 
-    return CTclValueRef(tcl_->createValue(mtime));
+    return CTclValueRef(tcl_->createValue(long(mtime)));
   }
   else if (option == "nativename") {
   }
@@ -3514,7 +3496,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_owner = CFile::isOwner(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_owner));
+    return CTclValueRef(tcl_->createValue(long(is_owner)));
   }
   else if (option == "pathtype") {
   }
@@ -3528,7 +3510,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_read = CFile::isReadable(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_read));
+    return CTclValueRef(tcl_->createValue(long(is_read)));
   }
   else if (option == "readlink") {
   }
@@ -3562,7 +3544,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool is_write = CFile::isWritable(fileName);
 
-    return CTclValueRef(tcl_->createValue(is_write));
+    return CTclValueRef(tcl_->createValue(long(is_write)));
   }
   else {
     tcl_->throwError("bad option \"" + option + "\": must be "
@@ -3682,7 +3664,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   uint numVals = valList->getLength();
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
   tcl_->setBreakFlag   (false);
   tcl_->setContinueFlag(false);
@@ -3691,7 +3673,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   for (uint i = 0, k = 0; i < numIters; ++i, k += numVars) {
     for (uint j = 0; j < numVars; ++j) {
-      CTclValueRef value = valList->getIndexValue(k + j);
+      auto value = valList->getIndexValue(k + j);
 
       const std::string &varName = varList->getIndexValue(j)->toString();
 
@@ -3723,11 +3705,11 @@ class CTclPrintF : public CPrintF {
   CTclValueRef nextArg() const { return args_[argNum_++]; }
 
   int   getInt     () const override {
-    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+    long i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
   long  getLong    () const override {
-    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+    long i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
   LLong getLongLong() const override {
-    int i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
+    long i=0; if (argNum_ < numArgs_) nextArg()->toInt(i); return i; }
 
   double getDouble() const override {
     double r=0; if (argNum_ < numArgs_) nextArg()->toReal(r); return r; }
@@ -3804,13 +3786,13 @@ exec(const std::vector<CTclValueRef> &args)
   if (numArgs == 2) {
     const std::string &varName = args[1]->toString();
 
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
     scope->setVariableValue(varName, tcl_->createValue(line));
 
-    uint len = line.size();
+    auto len = line.size();
 
-    return CTclValueRef(tcl_->createValue(len));
+    return CTclValueRef(tcl_->createValue(ulong(len)));
   }
   else
     return CTclValueRef(tcl_->createValue(line));
@@ -3926,13 +3908,13 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclScope *scope  = tcl_->getScope();
-  CTclScope *gscope = tcl_->getGlobalScope();
+  auto *scope  = tcl_->getScope();
+  auto *gscope = tcl_->getGlobalScope();
 
   for (uint i = 0; i < numArgs; ++i) {
     const std::string &varName = args[i]->toString();
 
-    CTclVariableRef var = scope->getVariable(varName);
+    auto var = scope->getVariable(varName);
 
     if (var.isValid()) {
       tcl_->throwError("variable \"" + varName + "\" already exists");
@@ -3986,14 +3968,12 @@ exec(const std::vector<CTclValueRef> &args)
     }
   }
   else {
-    CHistory *history = tcl_->getHistory();
+    auto *history = tcl_->getHistory();
 
-    CHistory::CommandList::const_iterator pc1, pc2;
+    for (auto pc1 = history->beginCommand(), pc2 = history->endCommand(); pc1 != pc2; ++pc1) {
+      auto *cmd = *pc1;
 
-    for (pc1 = history->beginCommand(), pc2 = history->endCommand(); pc1 != pc2; ++pc1) {
-      CHistoryCommand *cmd = *pc1;
-
-      std::cout << cmd->getNumber() << " " << cmd->getCommand() << std::endl;
+      std::cout << cmd->getNumber() << " " << cmd->getCommand() << "\n";
     }
   }
 
@@ -4100,18 +4080,18 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &varName = args[0]->toString();
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
-  CTclVariableRef var = scope->getVariable(varName);
+  auto var = scope->getVariable(varName);
 
   if (! var.isValid()) {
     tcl_->throwError("can't read \"" + varName + "\": no such variable");
     return CTclValueRef();
   }
 
-  CTclValueRef value = var->getValue();
+  auto value = var->getValue();
 
-  int ivalue;
+  long ivalue;
 
   bool ok = value->toInt(ivalue);
 
@@ -4120,7 +4100,7 @@ exec(const std::vector<CTclValueRef> &args)
       ++ivalue;
   }
   else {
-    int inc;
+    long inc;
 
     bool ok = args[1]->toInt(inc);
 
@@ -4128,7 +4108,7 @@ exec(const std::vector<CTclValueRef> &args)
       ivalue += inc;
   }
 
-  CTclValueRef value1 = tcl_->createValue(ivalue);
+  auto value1 = tcl_->createValue(ivalue);
 
   var->setValue(value1);
 
@@ -4158,7 +4138,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &procName = args[1]->toString();
 
-    CTclProc *proc = tcl_->getProc(procName);
+    auto *proc = tcl_->getProc(procName);
 
     if (! proc) {
       tcl_->throwError("\"" + procName + "\" is not a procedure");
@@ -4179,7 +4159,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &procName = args[1]->toString();
 
-    CTclProc *proc = tcl_->getProc(procName);
+    auto *proc = tcl_->getProc(procName);
 
     if (! proc) {
       tcl_->throwError("\"" + procName + "\" is not a procedure");
@@ -4189,7 +4169,7 @@ exec(const std::vector<CTclValueRef> &args)
     return proc->getBody();
   }
   else if (cmd == "cmdcount") {
-    return CTclValueRef(tcl_->createValue(0));
+    return CTclValueRef(tcl_->createValue(0L));
   }
   else if (cmd == "commands") {
     std::vector<std::string> names;
@@ -4208,7 +4188,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool rc = tcl_->isCompleteLine(cmd);
 
-    return CTclValueRef(tcl_->createValue(rc ? 1 : 0));
+    return CTclValueRef(tcl_->createValue(long(rc ? 1 : 0)));
   }
   else if (cmd == "default") {
   }
@@ -4218,20 +4198,20 @@ exec(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
     }
 
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
     const std::string &varName = args[1]->toString();
 
-    CTclVariableRef var = scope->getVariable(varName);
+    auto var = scope->getVariable(varName);
 
-    return CTclValueRef(tcl_->createValue(var.isValid() ? 1 : 0));
+    return CTclValueRef(tcl_->createValue(long(var.isValid() ? 1 : 0)));
   }
   else if (cmd == "frame") {
   }
   else if (cmd == "functions") {
   }
   else if (cmd == "globals") {
-    CTclScope *scope = tcl_->getGlobalScope();
+    auto *scope = tcl_->getGlobalScope();
 
     std::vector<std::string> names;
 
@@ -4245,7 +4225,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef(tcl_->createValue(name));
   }
   else if (cmd == "level") {
-    return CTclValueRef(tcl_->createValue(0));
+    return CTclValueRef(tcl_->createValue(0L));
   }
   else if (cmd == "library") {
   }
@@ -4260,7 +4240,7 @@ exec(const std::vector<CTclValueRef> &args)
   else if (cmd == "procs") {
     std::vector<std::string> names;
 
-    CTclScope *scope = tcl_->getGlobalScope();
+    auto *scope = tcl_->getGlobalScope();
 
     scope->getProcNames(names);
 
@@ -4273,7 +4253,7 @@ exec(const std::vector<CTclValueRef> &args)
   else if (cmd == "tclversion") {
   }
   else if (cmd == "vars") {
-    CTclScope *scope = tcl_->getScope();
+    auto *scope = tcl_->getScope();
 
     std::vector<std::string> names;
 
@@ -4340,19 +4320,19 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &varName = args[0]->toString();
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
-  CTclVariableRef var = scope->getVariable(varName);
+  auto var = scope->getVariable(varName);
 
   if (! var.isValid()) {
-    CTclList *list = new CTclList;
+    auto *list = new CTclList;
 
     scope->setVariableValue(varName, CTclValueRef(list));
 
     var = scope->getVariable(varName);
   }
 
-  CTclValueRef value = var->getValue();
+  auto value = var->getValue();
 
   CTclValueRef list;
 
@@ -4373,7 +4353,7 @@ CTclValueRef
 CTclListCommand::
 exec(const std::vector<CTclValueRef> &args)
 {
-  CTclList *list = new CTclList;
+  auto *list = new CTclList;
 
   uint numArgs = args.size();
 
@@ -4403,7 +4383,7 @@ exec(const std::vector<CTclValueRef> &args)
       return args[0]->toList(tcl_);
   }
 
-  int ind;
+  long ind;
 
   if (! args[1]->toIndex(tcl_, ind))
     return CTclValueRef();
@@ -4438,7 +4418,7 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  int ind;
+  long ind;
 
   if (! args[1]->toIndex(tcl_, ind))
     return CTclValueRef();
@@ -4457,7 +4437,7 @@ exec(const std::vector<CTclValueRef> &args)
   if (ind < 0 || ind > length)
     return CTclValueRef();
 
-  CTclList *list1 = new CTclList;
+  auto *list1 = new CTclList;
 
   for (int i = 0; i < ind; ++i)
     list1->addValue(list->getIndexValue(i));
@@ -4491,9 +4471,9 @@ exec(const std::vector<CTclValueRef> &args)
   else
     list = args[0]->toList(tcl_);
 
-  uint length = list->getLength();
+  auto length = list->getLength();
 
-  return CTclValueRef(tcl_->createValue(length));
+  return CTclValueRef(tcl_->createValue(ulong(length)));
 }
 
 //----------
@@ -4518,20 +4498,20 @@ exec(const std::vector<CTclValueRef> &args)
 
   int length = list->getLength();
 
-  int first;
+  long first;
 
   if (! args[1]->toIndex(tcl_, first))
     return CTclValueRef();
 
-  int last;
+  long last;
 
   if (! args[2]->toIndex(tcl_, last))
     return CTclValueRef();
 
-  CTclList *list1 = new CTclList;
+  auto *list1 = new CTclList;
 
   for (int i = first; i <= last && i >= 0 && i < length; ++i) {
-    CTclValueRef value = list->getIndexValue(i);
+    auto value = list->getIndexValue(i);
 
     list1->addValue(CTclValueRef(value->dup()));
   }
@@ -4552,12 +4532,12 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  int count;
+  long count;
 
   if (! args[0]->toIndex(tcl_, count))
     return CTclValueRef();
 
-  CTclList *list = new CTclList;
+  auto *list = new CTclList;
 
   for (int i = 0; i < count; ++i) {
     for (uint j = 1; j < numArgs; ++j)
@@ -4587,7 +4567,7 @@ exec(const std::vector<CTclValueRef> &args)
   else
     list = args[0]->toList(tcl_);
 
-  int ind1, ind2;
+  long ind1, ind2;
 
   if (! args[1]->toIndex(tcl_, ind1))
     return CTclValueRef();
@@ -4600,7 +4580,7 @@ exec(const std::vector<CTclValueRef> &args)
   if (ind1 < 0) ind1 += length;
   if (ind2 < 0) ind2 += length;
 
-  CTclList *list1 = new CTclList;
+  auto *list1 = new CTclList;
 
   if (ind1 < 0 || ind1 >= length) {
     tcl_->throwError("list doesn't contain element " + CStrUtil::toString(ind1));
@@ -4613,7 +4593,7 @@ exec(const std::vector<CTclValueRef> &args)
   }
 
   for (int i = 0; i < ind1 && i < int(length); ++i) {
-    CTclValueRef value = list->getIndexValue(i);
+    auto value = list->getIndexValue(i);
 
     list1->addValue(value);
   }
@@ -4622,7 +4602,7 @@ exec(const std::vector<CTclValueRef> &args)
     list1->addValue(args[i]);
 
   for (int i = ind2 + 1; i < int(length); ++i) {
-    CTclValueRef value = list->getIndexValue(i);
+    auto value = list->getIndexValue(i);
 
     list1->addValue(value);
   }
@@ -4672,18 +4652,18 @@ exec(const std::vector<CTclValueRef> &args)
   else
     list = args[0]->toList(tcl_);
 
-  CTclValueRef value = args[1];
+  auto value = args[1];
 
-  uint length = list->getLength();
+  auto length = list->getLength();
 
   for (uint i = 0; i < length; ++i) {
-    CTclValueRef value1 = list->getIndexValue(i);
+    auto value1 = list->getIndexValue(i);
 
     if (value1->cmp(value) == 0)
-      return CTclValueRef(tcl_->createValue(i));
+      return CTclValueRef(tcl_->createValue(ulong(i)));
   }
 
-  return CTclValueRef(tcl_->createValue(-1));
+  return CTclValueRef(tcl_->createValue(-1L));
 }
 
 //----------
@@ -4699,11 +4679,11 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
   const std::string &varName = args[0]->toString();
 
-  CTclVariableRef var = scope->getVariable(varName);
+  auto var = scope->getVariable(varName);
 
   if (! var.isValid()) {
     tcl_->throwError("can't read \"" + varName + "\": no such variable");
@@ -4711,7 +4691,7 @@ exec(const std::vector<CTclValueRef> &args)
   }
 
   if (numArgs > 2) {
-    CTclValueRef value = var->getValue();
+    auto value = var->getValue();
 
     for (uint i = 1; i < numArgs - 2; ++i) {
       CTclValueRef list;
@@ -4721,7 +4701,7 @@ exec(const std::vector<CTclValueRef> &args)
       else
         list = value->toList(tcl_);
 
-      int ind;
+      long ind;
 
       if (! args[i]->toIndex(tcl_, ind))
         return CTclValueRef();
@@ -4736,7 +4716,7 @@ exec(const std::vector<CTclValueRef> &args)
     else
       list = value->toList(tcl_);
 
-    int ind;
+    long ind;
 
     if (! args[numArgs - 2]->toIndex(tcl_, ind))
       return CTclValueRef();
@@ -4778,17 +4758,15 @@ exec(const std::vector<CTclValueRef> &args)
   uint length = list->getLength();
 
   for (uint i = 0; i < length; ++i) {
-    CTclValueRef value = list->getIndexValue(i);
+    auto value = list->getIndexValue(i);
 
     valueSet.insert(value);
   }
 
-  CTclList *list1 = new CTclList;
+  auto *list1 = new CTclList;
 
-  ValueSet::const_iterator p1, p2;
-
-  for (p1 = valueSet.begin(), p2 = valueSet.end(); p1 != p2; ++p1)
-    list1->addValue(*p1);
+  for (const auto &vs : valueSet)
+    list1->addValue(vs);
 
   return CTclValueRef(list1);
 }
@@ -4824,7 +4802,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &name = args[1]->toString();
 
-    CTclScope *scope = tcl_->getNamedScope(name, true);
+    auto *scope = tcl_->getNamedScope(name, true);
 
     tcl_->pushScope(scope);
 
@@ -4883,7 +4861,7 @@ exec(const std::vector<CTclValueRef> &args)
   if (numArgs > 1)
     access = args[1]->toString();
 
-  int perm = 0666;
+  long perm = 0666;
 
   if (numArgs > 2) {
     if (! args[2]->checkInt(tcl_, perm))
@@ -4893,6 +4871,22 @@ exec(const std::vector<CTclValueRef> &args)
   std::string handle = tcl_->openFile(name, access);
 
   return CTclValueRef(tcl_->createValue(handle));
+}
+
+//----------
+
+CTclValueRef
+CTclPackageCommand::
+exec(const std::vector<CTclValueRef> &args)
+{
+  uint numArgs = args.size();
+
+  if (numArgs < 1) {
+    tcl_->wrongNumArgs("should be \"package option ?arg ...?\"");
+    return CTclValueRef();
+  }
+
+  return CTclValueRef();
 }
 
 //----------
@@ -4919,7 +4913,7 @@ exec(const std::vector<CTclValueRef> &args)
   uint length = list->getLength();
 
   for (uint i = 0; i < length; ++i) {
-    CTclValueRef value = list->getIndexValue(i);
+    auto value = list->getIndexValue(i);
 
     // TODO: name + def value
 
@@ -5004,9 +4998,9 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  int pid = COSProcess::getProcessId();
+  auto pid = COSProcess::getProcessId();
 
-  return CTclValueRef(tcl_->createValue(pid));
+  return CTclValueRef(tcl_->createValue(long(pid)));
 }
 
 //----------
@@ -5081,7 +5075,7 @@ exec(const std::vector<CTclValueRef> &args)
     }
   }
   else {
-    int num;
+    long num;
 
     if (! args[pos + 1]->checkInt(tcl_, num))
       return CTclValueRef();
@@ -5129,7 +5123,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &varName = args[0]->toString();
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
   auto pos1 = varName.find ('(');
   auto pos2 = varName.rfind(')');
@@ -5202,9 +5196,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    uint len = str.size();
+    auto len = str.size();
 
-    return CTclValueRef(tcl_->createValue(len));
+    return CTclValueRef(tcl_->createValue(ulong(len)));
   }
   else if (cmd == "compare" || cmd == "equal") {
     if (numArgs < 3) {
@@ -5215,7 +5209,7 @@ exec(const std::vector<CTclValueRef> &args)
     bool is_equal = (cmd == "equal");
 
     bool        nocase = false;
-    int         length = -1;
+    long        length = -1;
     std::string str1, str2;
 
     uint pos = 1;
@@ -5242,7 +5236,7 @@ exec(const std::vector<CTclValueRef> &args)
     if (pos < numArgs)
       str2 = args[pos++]->toString();
 
-    int cmp = 0;
+    long cmp = 0;
 
     if (length >= 0) {
       str1 = str1.substr(0, length);
@@ -5263,7 +5257,7 @@ exec(const std::vector<CTclValueRef> &args)
     if (is_equal)
       return CTclValueRef(tcl_->createValue(cmp));
     else
-      return CTclValueRef(tcl_->createValue(cmp == 0));
+      return CTclValueRef(tcl_->createValue(long(cmp == 0)));
   }
   else if (cmd == "first") {
     if (numArgs != 3 && numArgs != 4) {
@@ -5276,7 +5270,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     auto pos = str.find(substr);
 
-    return CTclValueRef(tcl_->createValue(int(pos)));
+    return CTclValueRef(tcl_->createValue(pos));
   }
   else if (cmd == "index") {
     if (numArgs != 3 && numArgs != 4) {
@@ -5286,7 +5280,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    int pos;
+    long pos;
 
     bool ok = args[2]->toInt(pos);
 
@@ -5313,7 +5307,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     auto pos = str.rfind(substr);
 
-    return CTclValueRef(tcl_->createValue(int(pos)));
+    return CTclValueRef(tcl_->createValue(pos));
   }
   else if (cmd == "length") {
     if (numArgs != 2) {
@@ -5323,9 +5317,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    int len = str.size();
+    auto len = str.size();
 
-    return CTclValueRef(tcl_->createValue(len));
+    return CTclValueRef(tcl_->createValue(ulong(len)));
   }
   else if (cmd == "map") {
     return CTclValueRef();
@@ -5360,7 +5354,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     bool cmp = glob.compare(str2);
 
-    return CTclValueRef(tcl_->createValue(cmp));
+    return CTclValueRef(tcl_->createValue(long(cmp)));
   }
   else if (cmd == "range") {
     if (numArgs != 4) {
@@ -5370,7 +5364,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    int ind1, ind2;
+    long ind1, ind2;
 
     if (! args[2]->toIndex(tcl_, ind1))
       return CTclValueRef();
@@ -5390,7 +5384,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    int num;
+    long num;
 
     if (! args[2]->checkInt(tcl_, num))
       return CTclValueRef();
@@ -5410,7 +5404,7 @@ exec(const std::vector<CTclValueRef> &args)
 
     const std::string &str = args[1]->toString();
 
-    int start, end;
+    long start, end;
 
     if (! args[2]->checkInt(tcl_, start) || ! args[3]->checkInt(tcl_, end))
       return CTclValueRef();
@@ -5435,11 +5429,11 @@ exec(const std::vector<CTclValueRef> &args)
       return CTclValueRef();
     }
 
-    std::string str = args[1]->toString();
+    auto str = args[1]->toString();
 
-    int len = str.size();
+    auto len = str.size();
 
-    int start = 0, end = len;
+    long start = 0, end = len;
 
     if (numArgs > 2 && ! args[2]->checkInt(tcl_, start))
       return CTclValueRef();
@@ -5460,9 +5454,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     std::string str = args[1]->toString();
 
-    int len = str.size();
+    auto len = str.size();
 
-    int start = 0, end = len;
+    long start = 0, end = len;
 
     if (numArgs > 2 && ! args[2]->checkInt(tcl_, start))
       return CTclValueRef();
@@ -5483,9 +5477,9 @@ exec(const std::vector<CTclValueRef> &args)
 
     std::string str = args[1]->toString();
 
-    int len = str.size();
+    auto len = str.size();
 
-    int start = 0, end = len;
+    long start = 0, end = len;
 
     if (numArgs > 2 && ! args[2]->checkInt(tcl_, start))
       return CTclValueRef();
@@ -5686,8 +5680,8 @@ exec(const std::vector<CTclValueRef> &args)
     uint i = 0;
 
     for ( ; i < length - 1; i += 2) {
-      const std::string &pattern = list->getIndexValue(i)->toString();
-      CTclValueRef       body    = list->getIndexValue(i + 1);
+      const auto &pattern = list->getIndexValue(i)->toString();
+      auto        body    = list->getIndexValue(i + 1);
 
       patterns.push_back(pattern);
       bodies  .push_back(body);
@@ -5698,8 +5692,8 @@ exec(const std::vector<CTclValueRef> &args)
   }
   else {
     while (pos < numArgs - 1) {
-      const std::string &pattern = args[pos]->toString();
-      CTclValueRef       body    = args[pos + 1];
+      const auto &pattern = args[pos]->toString();
+      auto        body    = args[pos + 1];
 
       patterns.push_back(pattern);
       bodies  .push_back(body);
@@ -5722,8 +5716,8 @@ exec(const std::vector<CTclValueRef> &args)
     CRegExp regexp(str);
 
     for (uint i = 0; i < num_patterns; ++i) {
-      const std::string &pattern = patterns[i];
-      CTclValueRef       body    = bodies  [i];
+      const auto &pattern = patterns[i];
+      auto        body    = bodies  [i];
 
       if (i == num_patterns - 1 && pattern == "default") {
         body->exec(tcl_);
@@ -5740,8 +5734,8 @@ exec(const std::vector<CTclValueRef> &args)
     CGlob glob(str);
 
     for (uint i = 0; i < num_patterns; ++i) {
-      const std::string &pattern = patterns[i];
-      CTclValueRef       body    = bodies  [i];
+      const auto &pattern = patterns[i];
+      auto        body    = bodies  [i];
 
       if (i == num_patterns - 1 && pattern == "default") {
         body->exec(tcl_);
@@ -5756,8 +5750,8 @@ exec(const std::vector<CTclValueRef> &args)
   }
   else {
     for (uint i = 0; i < num_patterns; ++i) {
-      const std::string &pattern = patterns[i];
-      CTclValueRef       body    = bodies  [i];
+      const auto &pattern = patterns[i];
+      auto        body    = bodies  [i];
 
       if (i == num_patterns - 1 && pattern == "default") {
         body->exec(tcl_);
@@ -5835,22 +5829,22 @@ exec(const std::vector<CTclValueRef> &args)
     return CTclValueRef();
   }
 
-  CTclScope *scope = tcl_->getScope();
+  auto *scope = tcl_->getScope();
 
   if (numArgs == 1) {
     const std::string &name = args[0]->toString();
 
-    CTclVariableRef var = scope->getVariable(name);
+    auto var = scope->getVariable(name);
 
     if (! var.isValid())
       scope->addVariable(name, CTclValueRef());
   }
   else {
     for (uint i = 0; i < numArgs - 1; i += 2) {
-      const std::string &name  = args[i    ]->toString();
-      CTclValueRef       value = args[i + 1];
+      const auto &name  = args[i    ]->toString();
+      auto        value = args[i + 1];
 
-      CTclVariableRef var = scope->getVariable(name);
+      auto var = scope->getVariable(name);
 
       if (var.isValid())
         var->setValue(value);
@@ -5930,9 +5924,9 @@ exec(const std::vector<CTclValueRef> &args)
     }
   }
 
-  CTclScope *pscope = tcl_->getScope();
+  auto *pscope = tcl_->getScope();
 
-  CTclScope *scope = new CTclScope(tcl_, pscope);
+  auto *scope = new CTclScope(tcl_, pscope);
 
   tcl_->pushScope(scope);
 
@@ -5944,7 +5938,7 @@ exec(const std::vector<CTclValueRef> &args)
     for (uint i = 0; i < numProcArgs - 1; ++i)
       scope->setVariableValue(args_[i], args[i]);
 
-    CTclList *list = new CTclList;
+    auto *list = new CTclList;
 
     for (uint i = numProcArgs - 1; i < numArgs; ++i)
       list->addValue(args[i]);
@@ -5954,7 +5948,7 @@ exec(const std::vector<CTclValueRef> &args)
 
   const std::string &bodyStr = body_->toString();
 
-  CTclValueRef value = tcl_->parseString(bodyStr);
+  auto value = tcl_->parseString(bodyStr);
 
   delete scope;
 

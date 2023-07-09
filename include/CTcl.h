@@ -46,7 +46,7 @@ class CTclValue {
 
   virtual std::string toString() const = 0;
 
-  virtual bool toInt (int    &) const { return false; }
+  virtual bool toInt (long   &) const { return false; }
   virtual bool toReal(double &) const { return false; }
 
   virtual bool toBool() const = 0;
@@ -67,10 +67,10 @@ class CTclValue {
 
   virtual void addValue(CTclValueRef) { assert(false); }
 
-  bool checkInt (CTcl *tcl, int    &i);
+  bool checkInt (CTcl *tcl, long   &i);
   bool checkReal(CTcl *tcl, double &r);
 
-  bool toIndex(CTcl *tcl, int &ind);
+  bool toIndex(CTcl *tcl, long &ind);
 
   CTclValueRef eval(CTcl *tcl) const;
 
@@ -100,9 +100,9 @@ class CTclString : public CTclValue {
 
  ~CTclString() { }
 
-  CTclString *dup() const { return new CTclString(str_); }
+  CTclString *dup() const override { return new CTclString(str_); }
 
-  int cmp(CTclValueRef rhs) const {
+  int cmp(CTclValueRef rhs) const override {
     CTclString *str = rhs.cast<CTclString>();
 
     if      (str_ < str->str_) return -1;
@@ -110,16 +110,16 @@ class CTclString : public CTclValue {
     else                       return  0;
   }
 
-  void print(std::ostream &os) const;
+  void print(std::ostream &os) const override;
 
-  std::string toString() const;
+  std::string toString() const override;
 
-  bool toInt (int    &i) const;
-  bool toReal(double &r) const;
+  bool toInt (long   &i) const override;
+  bool toReal(double &r) const override;
 
-  bool toBool() const;
+  bool toBool() const override;
 
-  CTclValueRef toList(CTcl *tcl) const;
+  CTclValueRef toList(CTcl *tcl) const override;
 
   const std::string &getValue() const { return str_; }
 
@@ -148,9 +148,9 @@ class CTclArray : public CTclValue {
 
  ~CTclArray() { }
 
-  CTclArray *dup() const { return new CTclArray(values_); }
+  CTclArray *dup() const override { return new CTclArray(values_); }
 
-  int cmp(CTclValueRef rhs) const {
+  int cmp(CTclValueRef rhs) const override {
     CTclArray *array = rhs.cast<CTclArray>();
 
     uint numValues1 = uint(       values_.size());
@@ -182,29 +182,25 @@ class CTclArray : public CTclValue {
   }
 
   void getNames(std::vector<std::string> &names) {
-    ValueMap::const_iterator p1, p2;
-
-    for (p1 = values_.begin(), p2 = values_.end(); p1 != p2; ++p1)
-      names.push_back((*p1).first);
+    for (const auto &pv : values_)
+      names.push_back(pv.first);
   }
 
   void getNameValues(std::vector<std::string> &names, std::vector<CTclValueRef> &values) {
-    ValueMap::const_iterator p1, p2;
-
-    for (p1 = values_.begin(), p2 = values_.end(); p1 != p2; ++p1) {
-      names .push_back((*p1).first );
-      values.push_back((*p1).second);
+    for (const auto &pv : values_) {
+      names .push_back(pv.first );
+      values.push_back(pv.second);
     }
   }
 
-  void print(std::ostream &os) const;
+  void print(std::ostream &os) const override;
 
-  bool toBool() const;
+  bool toBool() const override;
 
-  std::string toString() const;
+  std::string toString() const override;
 
   CTclValueRef getValue(const std::string &indexStr) {
-    ValueMap::const_iterator p = values_.find(indexStr);
+    auto p = values_.find(indexStr);
 
     if (p == values_.end())
       return CTclValueRef();
@@ -233,9 +229,9 @@ class CTclList : public CTclValue {
 
  ~CTclList() { }
 
-  CTclList *dup() const { return new CTclList(values_); }
+  CTclList *dup() const override { return new CTclList(values_); }
 
-  int cmp(CTclValueRef rhs) const {
+  int cmp(CTclValueRef rhs) const override {
     CTclList *list = rhs.cast<CTclList>();
 
     uint numValues1 = uint(      values_.size());
@@ -254,29 +250,29 @@ class CTclList : public CTclValue {
     return 0;
   }
 
-  bool toBool() const;
+  bool toBool() const override;
 
-  std::string toString() const;
+  std::string toString() const override;
 
-  CTclValueRef toList(CTcl *) const { return CTclValueRef(dup()); }
+  CTclValueRef toList(CTcl *) const override { return CTclValueRef(dup()); }
 
-  uint getLength() const { return uint(values_.size()); }
+  uint getLength() const override { return uint(values_.size()); }
 
-  CTclValueRef getIndexValue(uint i) const {
+  CTclValueRef getIndexValue(uint i) const override {
     assert(i < values_.size());
 
     return CTclValueRef(values_[i]->dup());
   }
 
-  void setIndexValue(uint i, CTclValueRef value) {
+  void setIndexValue(uint i, CTclValueRef value) override {
     values_[i] = value;
   }
 
-  void addValue(CTclValueRef value) {
+  void addValue(CTclValueRef value) override {
     values_.push_back(CTclValueRef(value->dup()));
   }
 
-  void print(std::ostream &os) const;
+  void print(std::ostream &os) const override;
 
  private:
   ValueList values_;
@@ -341,126 +337,126 @@ class CTclCommentCommand : public CTclCommand {
  public:
   CTclCommentCommand(CTcl *tcl) : CTclCommand(tcl, "#") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclAfterCommand : public CTclCommand {
  public:
   CTclAfterCommand(CTcl *tcl) : CTclCommand(tcl, "after") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclAppendCommand : public CTclCommand {
  public:
   CTclAppendCommand(CTcl *tcl) : CTclCommand(tcl, "append") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclArrayCommand : public CTclCommand {
  public:
   CTclArrayCommand(CTcl *tcl) : CTclCommand(tcl, "array") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclBreakCommand : public CTclCommand {
  public:
   CTclBreakCommand(CTcl *tcl) : CTclCommand(tcl, "break") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclCatchCommand : public CTclCommand {
  public:
   CTclCatchCommand(CTcl *tcl) : CTclCommand(tcl, "catch") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclCDCommand : public CTclCommand {
  public:
   CTclCDCommand(CTcl *tcl) : CTclCommand(tcl, "cd") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclClockCommand : public CTclCommand {
  public:
   CTclClockCommand(CTcl *tcl) : CTclCommand(tcl, "clock") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclCloseCommand : public CTclCommand {
  public:
   CTclCloseCommand(CTcl *tcl) : CTclCommand(tcl, "close") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclContinueCommand : public CTclCommand {
  public:
   CTclContinueCommand(CTcl *tcl) : CTclCommand(tcl, "continue") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclEchoCommand : public CTclCommand {
  public:
   CTclEchoCommand(CTcl *tcl) : CTclCommand(tcl, "echo") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclEofCommand : public CTclCommand {
  public:
   CTclEofCommand(CTcl *tcl) : CTclCommand(tcl, "eof") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclEvalCommand : public CTclCommand {
  public:
   CTclEvalCommand(CTcl *tcl) : CTclCommand(tcl, "eval") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclExecCommand : public CTclCommand {
  public:
   CTclExecCommand(CTcl *tcl) : CTclCommand(tcl, "exec") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclExitCommand : public CTclCommand {
  public:
   CTclExitCommand(CTcl *tcl) : CTclCommand(tcl, "exit") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclExprCommand : public CTclCommand {
  public:
   CTclExprCommand(CTcl *tcl) : CTclCommand(tcl, "expr") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclFileCommand : public CTclCommand {
  public:
   CTclFileCommand(CTcl *tcl) : CTclCommand(tcl, "file") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclFlushCommand : public CTclCommand {
  public:
   CTclFlushCommand(CTcl *tcl) : CTclCommand(tcl, "flush") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclForCommand : public CTclCommand {
@@ -469,7 +465,7 @@ class CTclForCommand : public CTclCommand {
 
   uint getType() const { return uint(CommandType::ITERATION); }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclForeachCommand : public CTclCommand {
@@ -478,252 +474,259 @@ class CTclForeachCommand : public CTclCommand {
 
   uint getType() const { return uint(CommandType::ITERATION); }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclFormatCommand : public CTclCommand {
  public:
   CTclFormatCommand(CTcl *tcl) : CTclCommand(tcl, "format") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclGetsCommand : public CTclCommand {
  public:
   CTclGetsCommand(CTcl *tcl) : CTclCommand(tcl, "gets") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclGlobCommand : public CTclCommand {
  public:
   CTclGlobCommand(CTcl *tcl) : CTclCommand(tcl, "glob") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclGlobalCommand : public CTclCommand {
  public:
   CTclGlobalCommand(CTcl *tcl) : CTclCommand(tcl, "global") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclHistoryCommand : public CTclCommand {
  public:
   CTclHistoryCommand(CTcl *tcl) : CTclCommand(tcl, "history") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclIfCommand : public CTclCommand {
  public:
   CTclIfCommand(CTcl *tcl) : CTclCommand(tcl, "if") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclIncrCommand : public CTclCommand {
  public:
   CTclIncrCommand(CTcl *tcl) : CTclCommand(tcl, "incr") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclInfoCommand : public CTclCommand {
  public:
   CTclInfoCommand(CTcl *tcl) : CTclCommand(tcl, "info") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclJoinCommand : public CTclCommand {
  public:
   CTclJoinCommand(CTcl *tcl) : CTclCommand(tcl, "join") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLAppendCommand : public CTclCommand {
  public:
   CTclLAppendCommand(CTcl *tcl) : CTclCommand(tcl, "lappend") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclListCommand : public CTclCommand {
  public:
   CTclListCommand(CTcl *tcl) : CTclCommand(tcl, "list") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLIndexCommand : public CTclCommand {
  public:
   CTclLIndexCommand(CTcl *tcl) : CTclCommand(tcl, "lindex") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLInsertCommand : public CTclCommand {
  public:
   CTclLInsertCommand(CTcl *tcl) : CTclCommand(tcl, "linsert") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLLengthCommand : public CTclCommand {
  public:
   CTclLLengthCommand(CTcl *tcl) : CTclCommand(tcl, "llength") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLRangeCommand : public CTclCommand {
  public:
   CTclLRangeCommand(CTcl *tcl) : CTclCommand(tcl, "lrange") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLRepeatCommand : public CTclCommand {
  public:
   CTclLRepeatCommand(CTcl *tcl) : CTclCommand(tcl, "lrepeat") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLReplaceCommand : public CTclCommand {
  public:
   CTclLReplaceCommand(CTcl *tcl) : CTclCommand(tcl, "lreplace") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLSearchCommand : public CTclCommand {
  public:
   CTclLSearchCommand(CTcl *tcl) : CTclCommand(tcl, "lsearch") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLSetCommand : public CTclCommand {
  public:
   CTclLSetCommand(CTcl *tcl) : CTclCommand(tcl, "lset") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclLSortCommand : public CTclCommand {
  public:
   CTclLSortCommand(CTcl *tcl) : CTclCommand(tcl, "lsort") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclNamespaceCommand : public CTclCommand {
  public:
   CTclNamespaceCommand(CTcl *tcl) : CTclCommand(tcl, "namespace") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclOpenCommand : public CTclCommand {
  public:
   CTclOpenCommand(CTcl *tcl) : CTclCommand(tcl, "open") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
+};
+
+class CTclPackageCommand : public CTclCommand {
+ public:
+  CTclPackageCommand(CTcl *tcl) : CTclCommand(tcl, "package") { }
+
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclProcCommand : public CTclCommand {
  public:
   CTclProcCommand(CTcl *tcl) : CTclCommand(tcl, "proc") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclPutsCommand : public CTclCommand {
  public:
   CTclPutsCommand(CTcl *tcl) : CTclCommand(tcl, "puts") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclPidCommand : public CTclCommand {
  public:
   CTclPidCommand(CTcl *tcl) : CTclCommand(tcl, "pid") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclPwdCommand : public CTclCommand {
  public:
   CTclPwdCommand(CTcl *tcl) : CTclCommand(tcl, "pwd") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclReadCommand : public CTclCommand {
  public:
   CTclReadCommand(CTcl *tcl) : CTclCommand(tcl, "read") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclReturnCommand : public CTclCommand {
  public:
   CTclReturnCommand(CTcl *tcl) : CTclCommand(tcl, "return") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclSetCommand : public CTclCommand {
  public:
   CTclSetCommand(CTcl *tcl) : CTclCommand(tcl, "set") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclSourceCommand : public CTclCommand {
  public:
   CTclSourceCommand(CTcl *tcl) : CTclCommand(tcl, "source") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclStringCommand : public CTclCommand {
  public:
   CTclStringCommand(CTcl *tcl) : CTclCommand(tcl, "string") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclSwitchCommand : public CTclCommand {
  public:
   CTclSwitchCommand(CTcl *tcl) : CTclCommand(tcl, "switch") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclUpdateCommand : public CTclCommand {
  public:
   CTclUpdateCommand(CTcl *tcl) : CTclCommand(tcl, "update") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclUnsetCommand : public CTclCommand {
  public:
   CTclUnsetCommand(CTcl *tcl) : CTclCommand(tcl, "unset") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclVariableCommand : public CTclCommand {
  public:
   CTclVariableCommand(CTcl *tcl) : CTclCommand(tcl, "variable") { }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 class CTclWhileCommand : public CTclCommand {
@@ -732,7 +735,7 @@ class CTclWhileCommand : public CTclCommand {
 
   uint getType() const { return uint(CommandType::ITERATION); }
 
-  CTclValueRef exec(const std::vector<CTclValueRef> &args);
+  CTclValueRef exec(const std::vector<CTclValueRef> &args) override;
 };
 
 //---
@@ -799,7 +802,7 @@ class CTclEnvVariable : public CTclVariable {
  public:
   CTclEnvVariable();
 
-  CTclValueRef getArrayValue(const std::string &indexStr) const;
+  CTclValueRef getArrayValue(const std::string &indexStr) const override;
 
 };
 
@@ -1003,8 +1006,8 @@ class CTcl {
 
   void update(bool idletasks);
 
-  CTclValueRef createValue(int value) const;
-  CTclValueRef createValue(uint value) const;
+  CTclValueRef createValue(long value) const;
+  CTclValueRef createValue(ulong value) const;
   CTclValueRef createValue(double value) const;
   CTclValueRef createValue(const std::string &value) const;
   CTclValueRef createValue(const std::vector<std::string> &strs) const;
